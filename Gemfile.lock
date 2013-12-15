@@ -1,0 +1,23 @@
+GEM
+  remote: http://ruby.taobao.org/
+  specs:
+    evernote-thrift (1.25.1)
+    evernote_oauth (0.2.2)
+      evernote-thrift
+      oauth (>= 0.4.1)
+    oauth (0.4.7)
+    rack (1.5.2)
+    rack-protection (1.5.1)
+      rack
+    sinatra (1.4.4)
+      rack (~> 1.4)
+      rack-protection (~> 1.4)
+      tilt (~> 1.3, >= 1.3.4)
+    tilt (1.4.1)
+
+PLATFORMS
+  ruby
+
+DEPENDENCIES
+  evernote_oauth
+  sinatra
