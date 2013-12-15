@@ -1,0 +1,64 @@
+<html>
+<head>
+  <title>Evernote with Google Map</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css">
+  <link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap-theme.min.css">
+  <script src="https://code.jquery.com/jquery.js"></script>
+  <script src="//netdna.bootstrapcdn.com/bootstrap/3.0.3/js/bootstrap.min.js"></script>
+  <script type="text/javascript" src="http://maps.googleapis.com/maps/api/js?key=AIzaSyA1l3GrctMRBhHg7V1htQvP_3_b5jggUuY&sensor=false"></script>
+  <script type="text/javascript">
+    var map;
+    var geocoder;
+
+    function initialize() {
+      geocoder = new google.maps.Geocoder();
+      var mapOptions = {
+        center: new google.maps.LatLng(-34.397, 150.644),
+        zoom: 12
+      };
+      map = new google.maps.Map(document.getElementById("map-canvas"), mapOptions);
+    }
+
+    function codeAddress() {
+      var address = document.getElementById("address").value;
+      geocoder.geocode( { "address": address}, function(results, status){
+        if(status == google.maps.GeocoderStatus.OK) {
+          map.setCenter(results[0].geometry.location);
+          var marker = new google.maps.Marker({
+            map: map,
+            position: results[0].geometry.location
+          });
+        } else {
+          alert("Geocode was not successful for the following reason: " + status);
+        }
+      });
+    }
+    google.maps.event.addDomListener(window, 'load', initialize);
+  </script>
+
+  <style type="text/css">
+    #map-canvas {
+      height: 450px;
+      width: 600px;
+      margin-top: 5px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h3>Build up your map</h3>
+    <div class="row">
+      <div class="col-md-8">
+        <div class="input-group input-group-lg">
+          <input type="text" id="address" placeholder="Street Address" class="form-control">
+          <span class="input-group-btn">
+            <button class="btn btn-default" type="button" onclick="codeAddress()">Search</button>
+          </span>
+        </div>
+      </div>
+    </div>
+    <div id="map-canvas" />
+  </div>
+</body>
+</html>

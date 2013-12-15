@@ -134,27 +134,6 @@ end
 
 __END__
 
-@@ index
-<html>
-<head>
-  <title>Evernote Ruby Example App</title>
-</head>
-<body>
-  <a href="/requesttoken">Click here</a> to authenticate this application using OAuth.
-  <% if session[:notebooks] %>
-  <hr />
-  <h3>The current user is <%= session[:username] %> and there are <%= session[:total_notes] %> notes in their account</h3>
-  <br />
-  <h3>Here are the notebooks in this account:</h3>
-  <ul>
-    <% session[:notebooks].each do |notebook| %>
-    <li><%= notebook %></li>
-    <% end %>
-  </ul>
-  <% end %>
-</body>
-</html>
-
 @@ error 
 <html>
 <head>
