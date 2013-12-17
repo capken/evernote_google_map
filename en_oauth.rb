@@ -3,6 +3,7 @@
 ##
 
 require 'sinatra'
+require 'sinatra/json'
 enable :sessions
 
 # Load our dependencies and configuration settings
@@ -105,11 +106,55 @@ get '/callback' do
   session[:oauth_verifier] = params['oauth_verifier']
   begin
     session[:access_token] = session[:request_token].get_access_token(:oauth_verifier => session[:oauth_verifier])
-    redirect '/list'
+    redirect '/map'
   rescue => e
     @last_error = 'Error extracting access token'
     erb :error
   end
+end
+
+get '/map' do
+
+  image_path = File.join File.dirname(__FILE__), "sample_google_map.png"
+  image = File.open(image_path, "rb") {|io| io.read }
+  hash_func = Digest::MD5.new
+
+  data = Evernote::EDAM::Type::Data.new
+  data.size = image.size
+  data.bodyHash = hash_func.digest(image)
+  data.body = image
+
+  resource = Evernote::EDAM::Type::Resource.new
+  resource.mime = "image/png"
+  resource.data = data
+  resource.attributes = Evernote::EDAM::Type::ResourceAttributes.new
+  resource.attributes.fileName = "sample_google_map.png"
+
+  hash_hex = hash_func.hexdigest(image)
+
+  new_note = Evernote::EDAM::Type::Note.new
+  new_note.title = "New note with Google Map"
+  new_note.resources = [ resource ]
+
+  n_body = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
+  n_body += "<!DOCTYPE en-note SYSTEM \"http://xml.evernote.com/pub/enml2.dtd\">"
+  n_body += "<en-note><en-media type=\"image/png\" hash=\"#{hash_hex}\" /></en-note>"
+
+  new_note.content = n_body
+
+  begin
+    note = note_store.createNote(new_note)
+  rescue Evernote::EDAM::Error::EDAMUserException => edue
+    ## Something was wrong with the note data
+    ## See EDAMErrorCode enumeration for error code explanation
+    ## http://dev.evernote.com/documentation/reference/Errors.html#Enum_EDAMErrorCode
+    puts "EDAMUserException: #{edue}"
+  rescue Evernote::EDAM::Error::EDAMNotFoundException => ednfe
+    ## Parent Notebook GUID doesn't correspond to an actual notebook
+    puts "EDAMNotFoundException: Invalid parent notebook GUID"
+  end
+
+  json :status => 'OK'
 end
 
 
