@@ -11,12 +11,13 @@
   <script type="text/javascript">
     var map;
     var geocoder;
+    var loc;
 
     function initialize() {
       geocoder = new google.maps.Geocoder();
       var mapOptions = {
         center: new google.maps.LatLng(-34.397, 150.644),
-        zoom: 10
+        zoom: 14
       };
       map = new google.maps.Map(document.getElementById("map-canvas"), mapOptions);
     }
@@ -25,16 +26,33 @@
       var address = document.getElementById("address").value;
       geocoder.geocode( { "address": address}, function(results, status){
         if(status == google.maps.GeocoderStatus.OK) {
-          map.setCenter(results[0].geometry.location);
+          loc = results[0].geometry.location;
+          map.setCenter(loc);
+          console.log(JSON.stringify(loc))
           var marker = new google.maps.Marker({
             map: map,
-            position: results[0].geometry.location
+            position: loc 
           });
         } else {
           alert("Geocode was not successful for the following reason: " + status);
         }
       });
     }
+
+    function save() {
+      var noteName = document.getElementById("new-note-name").value;
+      $.ajax({
+        url: "/save",
+        data: { 
+          location: loc.nb + "," + loc.ob,
+          note_name: encodeURIComponent(noteName),
+        },
+        success: function(data) {
+          alert("OK");
+        }
+      })
+    }
+
     google.maps.event.addDomListener(window, 'load', initialize);
   </script>
 
@@ -75,10 +93,10 @@
             <a href="#" class="list-group-item">Vestibulum at eros</a>
           </div>
           <h5>Or create a new note</h5>
-          <input type="text" placeholder="New note name" class="form-control">
+          <input type="text" placeholder="New note name" id="new-note-name" class="form-control">
         </div>
         <div>
-          <button type="button" class="btn btn-primary" id="create-button">Create</button>
+          <button type="button" onclick="save()" class="btn btn-primary" id="create-button">Create</button>
         </div>
       </div>
     </div>

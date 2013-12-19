@@ -51,6 +51,24 @@ helpers do
       total_count + (counts.notebookCounts[notebook.guid] || 0)
     end
   end
+
+  def get_static_map(lat, lng, zoom)
+    service_endpoint = "http://maps.googleapis.com/maps/api/staticmap"
+    params = {
+      :center => "#{lat},#{lng}",
+      :zoom => zoom,
+      :scale => 1,
+      :size => "600x450",
+      :maptype => "roadmap",
+      :sensor => false
+    }.map { |k,v| "#{k}=#{v}" }.join("&")
+
+    url = [service_endpoint, "?", params].join
+    image_name = "#{lat}_#{lng}.png"
+    system("curl \"#{url}\" -o /tmp/map/#{image_name}")
+
+    return image_name
+  end
 end
 
 ##
@@ -113,9 +131,12 @@ get '/callback' do
   end
 end
 
-get '/map' do
+get '/save' do
+  note_name, location = params['note_name'], params['location']
+  lat, lng = location.split ','
+  image_name = get_static_map(lat, lng, 14)
 
-  image_path = File.join File.dirname(__FILE__), "sample_google_map.png"
+  image_path = "/tmp/map/#{image_name}"
   image = File.open(image_path, "rb") {|io| io.read }
   hash_func = Digest::MD5.new
 
@@ -128,12 +149,12 @@ get '/map' do
   resource.mime = "image/png"
   resource.data = data
   resource.attributes = Evernote::EDAM::Type::ResourceAttributes.new
-  resource.attributes.fileName = "sample_google_map.png"
+  resource.attributes.fileName = image_name
 
   hash_hex = hash_func.hexdigest(image)
 
   new_note = Evernote::EDAM::Type::Note.new
-  new_note.title = "New note with Google Map"
+  new_note.title = note_name
   new_note.resources = [ resource ]
 
   n_body = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
