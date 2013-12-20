@@ -52,6 +52,15 @@ helpers do
     end
   end
 
+  def top_five_notes
+    filter = Evernote::EDAM::NoteStore::NoteFilter.new
+    filter.ascending = false
+    spec = Evernote::EDAM::NoteStore::NotesMetadataResultSpec.new
+    spec.includeTitle = true
+
+    note_store.findNotesMetadata(auth_token, filter, 0, 5, spec).notes
+  end
+
   def get_static_map(lat, lng, zoom)
     service_endpoint = "http://maps.googleapis.com/maps/api/staticmap"
     params = {
@@ -76,6 +85,15 @@ end
 ##
 get '/' do
   erb :index
+end
+
+get '/top_five' do
+  notes = []
+  top_five_notes.each do |note|
+    notes << { "guid" => note.guid, "title" => note.title }
+  end
+
+  json :notes => notes 
 end
 
 ##
