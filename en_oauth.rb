@@ -78,11 +78,71 @@ helpers do
 
     return image_name
   end
+
+  def hash_func
+    Digest::MD5.new
+  end
+  
+  def image_resource_of(location)
+    lat, lng = location.split ','
+    image_name = get_static_map(lat, lng, 14)
+  
+    image_path = "/tmp/map/#{image_name}"
+    image_data = File.open(image_path, "rb") { |io| io.read }
+  
+    data = Evernote::EDAM::Type::Data.new
+    data.size = image_data.size
+    data.body = image_data
+    data.bodyHash = hash_func.digest(image_data)
+  
+    resource = Evernote::EDAM::Type::Resource.new
+    resource.mime = "image/png"
+    resource.data = data
+    resource.attributes = Evernote::EDAM::Type::ResourceAttributes.new
+    resource.attributes.fileName = image_name
+  
+    return resource
+  end
+  
+  def update_note(guid, resource)
+    hash_hex = hash_func.hexdigest(resource.data.body)
+    begin
+      note = note_store.getNote(guid, true, true, true, true)
+      note.resources << resource
+      note.content.gsub!(/<\/en-note>/, "<en-media type=\"image/png\" hash=\"#{hash_hex}\" /></en-note>")
+      puts note.content
+      note_store.updateNote(note)
+    rescue Evernote::EDAM::Error::EDAMNotFoundException
+      puts "EDAMNotFoundException: Invalid notebook GUID#{guid}"
+    end
+  end
+  
+  def create_note(note_name, resource)
+    hash_hex = hash_func.hexdigest(resource.data.body)
+    n_body = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
+    n_body += "<!DOCTYPE en-note SYSTEM \"http://xml.evernote.com/pub/enml2.dtd\">"
+    n_body += "<en-note><en-media type=\"image/png\" hash=\"#{hash_hex}\" /></en-note>"
+  
+    new_note = Evernote::EDAM::Type::Note.new
+    new_note.title = note_name
+    new_note.resources = [ resource ]
+    new_note.content = n_body
+  
+    begin
+      note = note_store.createNote(new_note)
+    rescue Evernote::EDAM::Error::EDAMUserException => edue
+      ## Something was wrong with the note data
+      ## See EDAMErrorCode enumeration for error code explanation
+      ## http://dev.evernote.com/documentation/reference/Errors.html#Enum_EDAMErrorCode
+      puts "EDAMUserException: #{edue}"
+    rescue Evernote::EDAM::Error::EDAMNotFoundException => ednfe
+      ## Parent Notebook GUID doesn't correspond to an actual notebook
+      puts "EDAMNotFoundException: Invalid parent notebook GUID"
+    end
+  end
+  
 end
 
-##
-# Index page
-##
 get '/' do
   erb :index
 end
@@ -96,17 +156,11 @@ get '/top_five' do
   json :notes => notes 
 end
 
-##
-# Reset the session
-##
 get '/reset' do
   session.clear
   redirect '/'
 end
 
-##
-# Obtain temporary credentials
-##
 get '/requesttoken' do
   callback_url = request.url.chomp("requesttoken").concat("callback")
   begin
@@ -118,9 +172,6 @@ get '/requesttoken' do
   end
 end
 
-##
-# Redirect the user to Evernote for authoriation
-##
 get '/authorize' do
   if session[:request_token]
     redirect session[:request_token].authorize_url
@@ -131,9 +182,6 @@ get '/authorize' do
   end
 end
 
-##
-# Receive callback from the Evernote authorization page
-##
 get '/callback' do
   unless params['oauth_verifier'] || session['request_token']
     @last_error = "Content owner did not authorize the temporary credentials"
@@ -149,72 +197,45 @@ get '/callback' do
   end
 end
 
-get '/save' do
-  note_name, location = params['note_name'], params['location']
-  lat, lng = location.split ','
-  image_name = get_static_map(lat, lng, 14)
+get '/update' do
+  guid = params['guid']
 
-  image_path = "/tmp/map/#{image_name}"
-  image = File.open(image_path, "rb") {|io| io.read }
-  hash_func = Digest::MD5.new
+  location  = params['location']
+  resource = image_resource_of(location)
 
-  data = Evernote::EDAM::Type::Data.new
-  data.size = image.size
-  data.bodyHash = hash_func.digest(image)
-  data.body = image
-
-  resource = Evernote::EDAM::Type::Resource.new
-  resource.mime = "image/png"
-  resource.data = data
-  resource.attributes = Evernote::EDAM::Type::ResourceAttributes.new
-  resource.attributes.fileName = image_name
-
-  hash_hex = hash_func.hexdigest(image)
-
-  new_note = Evernote::EDAM::Type::Note.new
-  new_note.title = note_name
-  new_note.resources = [ resource ]
-
-  n_body = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
-  n_body += "<!DOCTYPE en-note SYSTEM \"http://xml.evernote.com/pub/enml2.dtd\">"
-  n_body += "<en-note><en-media type=\"image/png\" hash=\"#{hash_hex}\" /></en-note>"
-
-  new_note.content = n_body
-
-  begin
-    note = note_store.createNote(new_note)
-  rescue Evernote::EDAM::Error::EDAMUserException => edue
-    ## Something was wrong with the note data
-    ## See EDAMErrorCode enumeration for error code explanation
-    ## http://dev.evernote.com/documentation/reference/Errors.html#Enum_EDAMErrorCode
-    puts "EDAMUserException: #{edue}"
-  rescue Evernote::EDAM::Error::EDAMNotFoundException => ednfe
-    ## Parent Notebook GUID doesn't correspond to an actual notebook
-    puts "EDAMNotFoundException: Invalid parent notebook GUID"
-  end
+  update_note(guid, resource)
 
   json :status => 'OK'
 end
 
+get '/save' do
+  note_name = params['note_name']
+
+  location  = params['location']
+  resource = image_resource_of(location)
+
+  create_note(note_name, resource)
+
+  json :status => 'OK'
+end
 
 ##
 # Access the user's Evernote account and display account data
 ##
-get '/list' do
-  begin
-    # Get notebooks
-    session[:notebooks] = notebooks.map(&:name)
-    # Get username
-    session[:username] = en_user.username
-    # Get total note count
-    session[:total_notes] = total_note_count
-    erb :index
-  rescue => e
-    @last_error = "Error listing notebooks: #{e.message}"
-    erb :error
-  end
-end
-
+#get '/list' do
+#  begin
+#    # Get notebooks
+#    session[:notebooks] = notebooks.map(&:name)
+#    # Get username
+#    session[:username] = en_user.username
+#    # Get total note count
+#    session[:total_notes] = total_note_count
+#    erb :index
+#  rescue => e
+#    @last_error = "Error listing notebooks: #{e.message}"
+#    erb :error
+#  end
+#end
 
 __END__
 

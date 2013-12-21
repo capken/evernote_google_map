@@ -69,17 +69,31 @@
     }
 
     function save() {
-      var noteName = document.getElementById("new-note-name").value;
-      $.ajax({
-        url: "/save",
-        data: { 
-          location: loc.nb + "," + loc.ob,
+      var url, requestData;
+      var latLng = loc.nb + "," + loc.ob;
+
+      if(selectedNote == null) {
+        var noteName = document.getElementById("new-note-name").value;
+        url = "/save";
+        requestData = {
           note_name: encodeURIComponent(noteName),
-        },
-        success: function(data) {
-          alert("OK");
+          location: latLng
         }
-      })
+      } else {
+        url = "/update";
+        requestData = {
+          guid: selectedNote.id,
+          location: latLng
+        }
+      }
+
+      $.ajax({
+        url: url,
+        data: requestData,
+        success: function(data) {
+          alert(JSON.stringify(data));
+        }
+      });
     }
 
     function resetSelectedNote() {
