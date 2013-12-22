@@ -1,21 +1,18 @@
-##
-# Copyright 2012 Evernote Corporation. All rights reserved.
-##
 
 require 'sinatra'
 require 'sinatra/json'
 require 'uri'
 
-enable :sessions
-
 $LOAD_PATH.push(File.expand_path(File.dirname(__FILE__)))
 require "evernote_config.rb"
 
-CACHE_DIR = "/tmp/evernote_map"
-
-Dir.mkdir(CACHE_DIR, 0700) unless File.directory? CACHE_DIR
-
 include Evernote::EDAM
+
+enable :sessions
+set :session_secret, 'super secret'
+
+CACHE_DIR = "/tmp/evernote_map"
+Dir.mkdir(CACHE_DIR, 0700) unless File.directory? CACHE_DIR
 
 helpers do
 
@@ -146,8 +143,10 @@ helpers do
         "<en-media type=\"image/png\" hash=\"#{hash_hex_of(resource)}\" /></en-note>")
       warn note.content
       note_store.updateNote(note)
+      [200, {"guid" => note.guid}]
     rescue Error::EDAMNotFoundException
-      puts "EDAMNotFoundException: Invalid notebook GUID#{guid}"
+      warn "EDAMNotFoundException: Invalid notebook GUID #{guid}"
+      [404, {"error" => "Note not found: #{guid}"}]
     end
   end
   
@@ -163,12 +162,11 @@ helpers do
   
     begin
       note = note_store.createNote(new_note)
+      [200, {"guid" => note.guid}]
     rescue Error::EDAMUserException => edue
       ## http://dev.evernote.com/documentation/reference/Errors.html#Enum_EDAMErrorCode
       warn "EDAMUserException: #{edue}"
-    rescue Error::EDAMNotFoundException => ednfe
-      ## Parent Notebook GUID doesn't correspond to an actual notebook
-      warn "EDAMNotFoundException: Invalid parent notebook GUID"
+      [500, {"error" => "EDAMUserException: #{edue}"}]
     end
   end
 end
@@ -196,9 +194,10 @@ get '/update' do
   location  = params['location']
   resource = image_resource_of(location)
 
-  update_note(guid, resource)
+  code, message = update_note(guid, resource)
 
-  json :status => 'OK'
+  status code
+  json message
 end
 
 get '/save' do
@@ -207,9 +206,10 @@ get '/save' do
   location  = params['location']
   resource = image_resource_of(location)
 
-  create_note(note_name, resource)
+  code, message = create_note(note_name, resource)
 
-  json :status => 'OK'
+  status code
+  json message
 end
 
 # oauth related routers
