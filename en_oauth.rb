@@ -4,28 +4,44 @@
 
 require 'sinatra'
 require 'sinatra/json'
+require 'uri'
+
 enable :sessions
 
-# Load our dependencies and configuration settings
 $LOAD_PATH.push(File.expand_path(File.dirname(__FILE__)))
 require "evernote_config.rb"
 
-##
-# Verify that you have obtained an Evernote API key
-##
-before do
-  if OAUTH_CONSUMER_KEY.empty? || OAUTH_CONSUMER_SECRET.empty?
-    halt '<span style="color:red">Before using this sample code you must edit evernote_config.rb and replace OAUTH_CONSUMER_KEY and OAUTH_CONSUMER_SECRET with the values that you received from Evernote. If you do not have an API key, you can request one from <a href="http://dev.evernote.com/documentation/cloud/">dev.evernote.com/documentation/cloud/</a>.</span>'
-  end
-end
+CACHE_DIR = "/tmp/evernote_map"
+
+Dir.mkdir(CACHE_DIR, 0700) unless File.directory? CACHE_DIR
+
+include Evernote::EDAM
 
 helpers do
+
+  def request_token
+    session[:request_token]
+  end
+
+  def authorize_url
+    request_token.authorize_url
+  end
+
+  def access_token
+    session[:access_token]
+  end
+
   def auth_token
-    session[:access_token].token if session[:access_token]
+    access_token ? access_token.token : nil
   end
 
   def client
-    @client ||= EvernoteOAuth::Client.new(token: auth_token, consumer_key:OAUTH_CONSUMER_KEY, consumer_secret:OAUTH_CONSUMER_SECRET, sandbox: SANDBOX)
+    @client ||= EvernoteOAuth::Client.new(
+      token: auth_token,
+      consumer_key:OAUTH_CONSUMER_KEY,
+      consumer_secret:OAUTH_CONSUMER_SECRET,
+      sandbox: SANDBOX
+    )
   end
 
   def user_store
@@ -40,29 +56,43 @@ helpers do
     user_store.getUser(auth_token)
   end
 
-  def notebooks
-    @notebooks ||= note_store.listNotebooks(auth_token)
-  end
-
-  def total_note_count
-    filter = Evernote::EDAM::NoteStore::NoteFilter.new
-    counts = note_store.findNoteCounts(auth_token, filter, false)
-    notebooks.inject(0) do |total_count, notebook|
-      total_count + (counts.notebookCounts[notebook.guid] || 0)
+  def filter
+    if @filter.nil?
+      @filter = NoteStore::NoteFilter.new
+      @filter.order = Type::NoteSortOrder::UPDATED
     end
+
+    return @filter
   end
 
-  def top_five_notes
-    filter = Evernote::EDAM::NoteStore::NoteFilter.new
-    filter.ascending = false
-    spec = Evernote::EDAM::NoteStore::NotesMetadataResultSpec.new
-    spec.includeTitle = true
+  def spec
+    if @spec.nil?
+      @spec = NoteStore::NotesMetadataResultSpec.new
+      @spec.includeTitle = true
+    end
 
-    note_store.findNotesMetadata(auth_token, filter, 0, 5, spec).notes
+    return @spec
   end
 
-  def get_static_map(lat, lng, zoom)
-    service_endpoint = "http://maps.googleapis.com/maps/api/staticmap"
+  def latest_notes(max)
+    note_store.findNotesMetadata(
+      auth_token, filter, 0, max, spec
+    ).notes
+  end
+
+  def map_provider_endpoint
+    "http://maps.googleapis.com/maps/api/staticmap"
+  end
+
+  def map_image_name(lat, lng)
+    "#{lat}_#{lng}.png"
+  end
+
+  def map_image_path(lat, lng)
+    "#{CACHE_DIR}/#{map_image_name(lat, lng)}"
+  end
+
+  def dump_static_map(lat, lng, zoom)
     params = {
       :center => "#{lat},#{lng}",
       :zoom => zoom,
@@ -72,129 +102,92 @@ helpers do
       :sensor => false
     }.map { |k,v| "#{k}=#{v}" }.join("&")
 
-    url = [service_endpoint, "?", params].join
-    image_name = "#{lat}_#{lng}.png"
-    system("curl \"#{url}\" -o /tmp/map/#{image_name}")
+    url = [map_provider_endpoint, "?", params].join
 
-    return image_name
+    system("curl \"#{url}\" -o #{map_image_path(lat, lng)}")
   end
 
   def hash_func
-    Digest::MD5.new
+    @hash ||= Digest::MD5.new
   end
   
   def image_resource_of(location)
     lat, lng = location.split ','
-    image_name = get_static_map(lat, lng, 14)
+
+    if dump_static_map(lat, lng, 14)
+      image_data = File.open(
+        map_image_path(lat, lng), "rb"
+      ) { |io| io.read }
   
-    image_path = "/tmp/map/#{image_name}"
-    image_data = File.open(image_path, "rb") { |io| io.read }
+      data = Type::Data.new
+      data.size = image_data.size
+      data.body = image_data
+      data.bodyHash = hash_func.digest(image_data)
   
-    data = Evernote::EDAM::Type::Data.new
-    data.size = image_data.size
-    data.body = image_data
-    data.bodyHash = hash_func.digest(image_data)
+      resource = Type::Resource.new
+      resource.mime = "image/png"
+      resource.data = data
+      resource.attributes = Type::ResourceAttributes.new
+      resource.attributes.fileName = map_image_name(lat, lng)
   
-    resource = Evernote::EDAM::Type::Resource.new
-    resource.mime = "image/png"
-    resource.data = data
-    resource.attributes = Evernote::EDAM::Type::ResourceAttributes.new
-    resource.attributes.fileName = image_name
-  
-    return resource
+      return resource
+    end
+  end
+
+  def hash_hex_of(resource)
+    hash_func.hexdigest(resource.data.body)
   end
   
   def update_note(guid, resource)
-    hash_hex = hash_func.hexdigest(resource.data.body)
     begin
       note = note_store.getNote(guid, true, true, true, true)
       note.resources << resource
-      note.content.gsub!(/<\/en-note>/, "<en-media type=\"image/png\" hash=\"#{hash_hex}\" /></en-note>")
-      puts note.content
+      note.content.gsub!(/<\/en-note>/,
+        "<en-media type=\"image/png\" hash=\"#{hash_hex_of(resource)}\" /></en-note>")
+      warn note.content
       note_store.updateNote(note)
-    rescue Evernote::EDAM::Error::EDAMNotFoundException
+    rescue Error::EDAMNotFoundException
       puts "EDAMNotFoundException: Invalid notebook GUID#{guid}"
     end
   end
   
   def create_note(note_name, resource)
-    hash_hex = hash_func.hexdigest(resource.data.body)
     n_body = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
     n_body += "<!DOCTYPE en-note SYSTEM \"http://xml.evernote.com/pub/enml2.dtd\">"
-    n_body += "<en-note><en-media type=\"image/png\" hash=\"#{hash_hex}\" /></en-note>"
+    n_body += "<en-note><en-media type=\"image/png\" hash=\"#{hash_hex_of(resource)}\" /></en-note>"
   
-    new_note = Evernote::EDAM::Type::Note.new
+    new_note = Type::Note.new
     new_note.title = note_name
     new_note.resources = [ resource ]
     new_note.content = n_body
   
     begin
       note = note_store.createNote(new_note)
-    rescue Evernote::EDAM::Error::EDAMUserException => edue
-      ## Something was wrong with the note data
-      ## See EDAMErrorCode enumeration for error code explanation
+    rescue Error::EDAMUserException => edue
       ## http://dev.evernote.com/documentation/reference/Errors.html#Enum_EDAMErrorCode
-      puts "EDAMUserException: #{edue}"
-    rescue Evernote::EDAM::Error::EDAMNotFoundException => ednfe
+      warn "EDAMUserException: #{edue}"
+    rescue Error::EDAMNotFoundException => ednfe
       ## Parent Notebook GUID doesn't correspond to an actual notebook
-      puts "EDAMNotFoundException: Invalid parent notebook GUID"
+      warn "EDAMNotFoundException: Invalid parent notebook GUID"
     end
   end
-  
+end
+
+before '/' do
+  redirect "/requesttoken" if access_token.nil?
 end
 
 get '/' do
   erb :index
 end
 
-get '/top_five' do
+get '/latest_five_notes' do
   notes = []
-  top_five_notes.each do |note|
+  latest_notes(5).each do |note|
     notes << { "guid" => note.guid, "title" => note.title }
   end
 
   json :notes => notes 
-end
-
-get '/reset' do
-  session.clear
-  redirect '/'
-end
-
-get '/requesttoken' do
-  callback_url = request.url.chomp("requesttoken").concat("callback")
-  begin
-    session[:request_token] = client.request_token(:oauth_callback => callback_url)
-    redirect '/authorize'
-  rescue => e
-    @last_error = "Error obtaining temporary credentials: #{e.message}"
-    erb :error
-  end
-end
-
-get '/authorize' do
-  if session[:request_token]
-    redirect session[:request_token].authorize_url
-  else
-    # You shouldn't be invoking this if you don't have a request token
-    @last_error = "Request token not set."
-    erb :error
-  end
-end
-
-get '/callback' do
-  unless params['oauth_verifier'] || session['request_token']
-    @last_error = "Content owner did not authorize the temporary credentials"
-    halt erb :error
-  end
-  session[:oauth_verifier] = params['oauth_verifier']
-  begin
-    session[:access_token] = session[:request_token].get_access_token(:oauth_verifier => session[:oauth_verifier])
-    redirect '/map'
-  rescue => e
-    @last_error = 'Error extracting access token'
-    erb :error
-  end
 end
 
 get '/update' do
@@ -209,7 +202,7 @@ get '/update' do
 end
 
 get '/save' do
-  note_name = params['note_name']
+  note_name = URI.decode(params['note_name'])
 
   location  = params['location']
   resource = image_resource_of(location)
@@ -219,23 +212,52 @@ get '/save' do
   json :status => 'OK'
 end
 
-##
-# Access the user's Evernote account and display account data
-##
-#get '/list' do
-#  begin
-#    # Get notebooks
-#    session[:notebooks] = notebooks.map(&:name)
-#    # Get username
-#    session[:username] = en_user.username
-#    # Get total note count
-#    session[:total_notes] = total_note_count
-#    erb :index
-#  rescue => e
-#    @last_error = "Error listing notebooks: #{e.message}"
-#    erb :error
-#  end
-#end
+# oauth related routers
+
+get '/requesttoken' do
+  callback_url = request.url.
+    chomp("requesttoken").concat("callback")
+  begin
+    session[:request_token] = client.request_token(
+      :oauth_callback => callback_url)
+    redirect '/authorize'
+  rescue => e
+    @last_error = "Error obtaining temporary credentials: #{e.message}"
+    erb :error
+  end
+end
+
+get '/authorize' do
+  if request_token
+    redirect authorize_url
+  else
+    @last_error = "Request token not set."
+    erb :error
+  end
+end
+
+get '/callback' do
+
+  unless params[:oauth_verifier] || request_token
+    @last_error = "Content owner did not authorize the temporary credentials"
+    halt erb :error
+  end
+
+  begin
+    session[:access_token] = request_token.get_access_token(
+      :oauth_verifier => params[:oauth_verifier]
+    )
+    redirect '/'
+  rescue => e
+    @last_error = 'Error extracting access token'
+    erb :error
+  end
+end
+
+get '/reset' do
+  session.clear
+  redirect '/'
+end
 
 __END__
 

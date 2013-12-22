@@ -16,15 +16,18 @@
     var selectedNote = null;
 
     function initialize() {
+
       geocoder = new google.maps.Geocoder();
       var mapOptions = {
-        center: new google.maps.LatLng(-34.397, 150.644),
+        center: new google.maps.LatLng(39.908715, 116.3973889),
         zoom: 14
       };
-      map = new google.maps.Map(document.getElementById("map-canvas"), mapOptions);
 
+      var mapDiv = document.getElementById("map-canvas");
+      map = new google.maps.Map(mapDiv, mapOptions);
+      
       $.ajax({
-        url: "/top_five",
+        url: "/latest_five_notes",
         success: function(data) {
           var notes = data.notes;
           var htmlCodes = [];
@@ -126,7 +129,7 @@
     <div class="row">
       <div class="col-md-8" id="map-canvas"></div>
       <div class="col-md-4">
-        <h4>Step 1 : find a location</h4>
+        <h4>Find a location</h4>
         <div class="input-group">
           <input type="text" id="address" placeholder="Street Address" class="form-control">
           <span class="input-group-btn">
@@ -134,13 +137,13 @@
           </span>
         </div>
         <div>
-          <h4>Step 2 : choose an existing note</h4>
+          <h4>Choose a note</h4>
           <div class="list-group" id="note-list"></div>
-          <h5>Or create a new note</h5>
+          <h4>Or create a new one</h4>
           <input type="text" onfocus="resetSelectedNote()" placeholder="New note name" id="new-note-name" class="form-control">
         </div>
         <div>
-          <button type="button" onclick="save()" class="btn btn-primary" id="create-button">Create</button>
+          <button type="button" onclick="save()" class="btn btn-primary" id="create-button">Attach this map to your note</button>
         </div>
       </div>
     </div>
