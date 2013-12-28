@@ -179,6 +179,10 @@ get '/' do
   erb :index
 end
 
+get '/map' do
+  erb :map
+end
+
 get '/latest_five_notes' do
   notes = []
   latest_notes(5).each do |note|
