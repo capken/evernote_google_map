@@ -6,8 +6,11 @@
   <link rel="stylesheet" href="http://yui.yahooapis.com/pure/0.3.0/pure-min.css">
   <link rel="stylesheet" href="http://netdna.bootstrapcdn.com/font-awesome/3.1.1/css/font-awesome.css">
   <link rel="stylesheet" href="http://netdna.bootstrapcdn.com/font-awesome/3.1.1/css/font-awesome-ie7.css">
+  <script src="http://use.typekit.net/gis6vng.js"></script>
   <script type="text/javascript" src="http://maps.googleapis.com/maps/api/js?key=AIzaSyA1l3GrctMRBhHg7V1htQvP_3_b5jggUuY&sensor=false"></script>
   <script type="text/javascript">
+    try { Typekit.load(); } catch (e) {}
+
     var map;
     function initialize() {
       var mapOptions = {
@@ -29,7 +32,7 @@
     }
 
     #layout {
-      padding-left: 360px; /* "left col (nav + list)" width */
+      padding-left: 360px;
       position: relative;
       height: 100%;
     }
@@ -40,6 +43,26 @@
       bottom: 0;
       width: 360px;
       margin-left: -360px;
+      background-color: rgb(24, 33, 61);
+      color: #fff;
+    }
+
+    .header {
+      margin: 50% 2em 0;
+      text-align: right;
+    }
+
+    .brand-title,
+    .brand-tagline {
+      margin: 0;
+    }
+
+    .brand-title {
+      text-transform: uppercase;
+    }
+    .brand-tagline {
+      font-weight: 300;
+      color: rgb(142, 142, 214);
     }
 
     .content {
@@ -70,11 +93,13 @@
     }
   </style>
 </head>
-
 <body>
   <div class="pure-g" id="layout">
     <div class="sidebar pure-u">
-      <h3>Side Bar</h3>
+      <div class="header">
+        <h1 class="brand-title">Map Note</h1>
+        <h2 class="brand-tagline">Evernote with Google Map</h2>
+      </div>
     </div>
     <div class="pure-u-1">
       <div class="content">
