@@ -9,20 +9,61 @@
   <script src="http://use.typekit.net/gis6vng.js"></script>
   <script type="text/javascript" src="http://maps.googleapis.com/maps/api/js?key=AIzaSyA1l3GrctMRBhHg7V1htQvP_3_b5jggUuY&sensor=false"></script>
   <script type="text/javascript">
-    try { Typekit.load(); } catch (e) {}
 
-    var map;
+    var init = {
+      lat: 39.908715,
+      lng: 116.3973889,
+      zoom: 14,
+      center: function() {
+        return new google.maps.LatLng(init.lat, init.lng)
+      }
+    };
+
+    var map, geocoder, marker;
+    var mapDiv, addInput;
+
     function initialize() {
-      var mapOptions = {
-        center: new google.maps.LatLng(39.908715, 116.3973889),
-        zoom: 14
+      var options = {
+        center: init.center(),
+        zoom: init.zoom
       };
 
-      var mapDiv = document.getElementById("map-canvas");
-      map = new google.maps.Map(mapDiv, mapOptions);
+      mapDiv = document.getElementById("map-canvas");
+      addInput = document.getElementById("address");
+
+      map = new google.maps.Map(mapDiv, options);
+      geocoder = new google.maps.Geocoder();
+      marker = new google.maps.Marker({ 
+        map: map,
+        animation: google.maps.Animation.BOUNCE
+      });
     }
 
+    function updateMap(center) {
+      map.setCenter(center);
+      marker.setPosition(map.getCenter());
+      //marker.setAnimation(google.maps.Animation.DROP);
+    }
+
+    function search() {
+      var address = addInput.value;
+      geocoder.geocode( { "address": address }, function(data, status) {
+        if(status == google.maps.GeocoderStatus.OK) {
+          var loc = data[0].geometry.location;
+          updateMap(loc);
+        } else {
+          alert("Geocode was not successful for the following reason: " + status);
+        }
+      });
+    }
+
+    function save() {
+    }
+
+    google.maps.visualRefresh = true;
     google.maps.event.addDomListener(window, 'load', initialize);
+
+    try { Typekit.load(); } catch (e) {}
   </script>
 
   <style type="text/css">
@@ -98,7 +139,7 @@
     <div class="sidebar pure-u">
       <div class="header">
         <h1 class="brand-title">Map Note</h1>
-        <h2 class="brand-tagline">Evernote with Google Map</h2>
+        <h3 class="brand-tagline">Evernote with Google Map</h3>
       </div>
     </div>
     <div class="pure-u-1">
@@ -109,10 +150,10 @@
   </div>
   <div id="search-bar">
     <input id="address" placeholder="Enter your location" type="text">
-    <button type="submit" class="pure-button pure-button-primary">
+    <button type="submit" class="pure-button pure-button-primary" onclick="search()">
       <i class="icon-search"></i>
     </button>
-    <button type="submit" class="pure-button pure-button-primary">
+    <button type="submit" class="pure-button pure-button-primary" onclick="save()">
       <i class="icon-save"></i>
     </button>
   </div>
