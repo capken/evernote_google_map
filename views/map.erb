@@ -3,11 +3,15 @@
 <head>
   <title>Evernote with Google Map</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="stylesheet" href="http://yui.yahooapis.com/pure/0.3.0/pure-min.css">
   <link rel="stylesheet" href="http://netdna.bootstrapcdn.com/font-awesome/3.1.1/css/font-awesome.css">
   <link rel="stylesheet" href="http://netdna.bootstrapcdn.com/font-awesome/3.1.1/css/font-awesome-ie7.css">
   <script src="http://use.typekit.net/gis6vng.js"></script>
-  <script type="text/javascript" src="http://maps.googleapis.com/maps/api/js?key=AIzaSyA1l3GrctMRBhHg7V1htQvP_3_b5jggUuY&sensor=false"></script>
+  <link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css">
+  <link rel="stylesheet" href="http://yui.yahooapis.com/pure/0.3.0/pure-min.css">
+  <script src="https://code.jquery.com/jquery.js"></script>
+  <script src="//netdna.bootstrapcdn.com/bootstrap/3.0.3/js/bootstrap.min.js"></script>
+  <script type="text/javascript" 
+    src="http://maps.googleapis.com/maps/api/js?key=AIzaSyA1l3GrctMRBhHg7V1htQvP_3_b5jggUuY&sensor=false"></script>
   <script type="text/javascript">
 
     var init = {
@@ -58,6 +62,7 @@
     }
 
     function save() {
+      $("#myModal").modal("show");
     }
 
     google.maps.visualRefresh = true;
@@ -139,7 +144,7 @@
     <div class="sidebar pure-u">
       <div class="header">
         <h1 class="brand-title">Map Note</h1>
-        <h3 class="brand-tagline">Evernote with Google Map</h3>
+        <h3 class="brand-tagline">Create Your Note with A Map</h3>
       </div>
     </div>
     <div class="pure-u-1">
@@ -150,12 +155,29 @@
   </div>
   <div id="search-bar">
     <input id="address" placeholder="Enter your location" type="text">
-    <button type="submit" class="pure-button pure-button-primary" onclick="search()">
+    <button class="pure-button pure-button-primary" onclick="search()">
       <i class="icon-search"></i>
     </button>
-    <button type="submit" class="pure-button pure-button-primary" onclick="save()">
+    <button class="pure-button pure-button-primary" onclick="save()">
       <i class="icon-save"></i>
     </button>
+  </div>
+  <div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+          <h4 class="modal-title" id="myModalLabel">Settings</h4>
+        </div>
+        <div class="modal-body">
+          ...
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+          <button type="button" class="btn btn-primary">Save changes</button>
+        </div>
+      </div>
+    </div>
   </div>
 </body>
 </html>
