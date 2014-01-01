@@ -1,4 +1,3 @@
-
 require 'sinatra'
 require 'sinatra/json'
 require 'uri'
@@ -54,25 +53,21 @@ helpers do
   end
 
   def filter
-    if @filter.nil?
-      @filter = NoteStore::NoteFilter.new
-      @filter.order = Type::NoteSortOrder::UPDATED
-    end
+    @filter = NoteStore::NoteFilter.new
+    @filter.order = Type::NoteSortOrder::UPDATED
 
     return @filter
   end
 
   def spec
-    if @spec.nil?
-      @spec = NoteStore::NotesMetadataResultSpec.new
-      @spec.includeTitle = true
-    end
+    @spec = NoteStore::NotesMetadataResultSpec.new
+    @spec.includeTitle = true
 
     return @spec
   end
 
   def latest_notes(max)
-    note_store.findNotesMetadata(
+    @note_store.findNotesMetadata(
       auth_token, filter, 0, max, spec
     ).notes
   end
@@ -171,19 +166,30 @@ helpers do
   end
 end
 
-before '/' do
-  redirect "/requesttoken" if access_token.nil?
+before '/api/*' do
+  if auth_token.nil?
+    warn "auth_token is nil"
+    halt 401,  "auth token is invalid"
+  else
+    @client = EvernoteOAuth::Client.new(
+      token: auth_token,
+      sandbox: SANDBOX
+    )
+    begin
+      @user_store = @client.user_store
+      @note_store = @client.note_store
+    rescue Error::EDAMUserException => e
+      warn "auth token is invalid"
+      halt(401, "auth token is invalid") if e.errorCode == Error::EDAMErrorCode::AUTH_EXPIRED
+    end
+  end
 end
 
 get '/' do
-  erb :index
-end
-
-get '/map' do
   erb :map
 end
 
-get '/latest_five_notes' do
+get '/api/notes' do
   notes = []
   latest_notes(5).each do |note|
     notes << { "guid" => note.guid, "title" => note.title }
@@ -192,19 +198,8 @@ get '/latest_five_notes' do
   json :notes => notes 
 end
 
-get '/update' do
-  guid = params['guid']
-
-  location  = params['location']
-  resource = image_resource_of(location)
-
-  code, message = update_note(guid, resource)
-
-  status code
-  json message
-end
-
-get '/save' do
+# create a new note
+post '/api/notes' do
   note_name = URI.decode(params['note_name'])
 
   location  = params['location']
@@ -216,22 +211,43 @@ get '/save' do
   json message
 end
 
+# update a note
+put '/api/update/:id' do
+  guid = params['id']
+
+  location  = params['location']
+  resource = image_resource_of(location)
+
+  code, message = update_note(guid, resource)
+
+  status code
+  json message
+end
+
 # oauth related routers
 
-get '/requesttoken' do
+get '/oauth/request_token' do
+  #session[:back_url] = params[:back_url]
+  #warn "back_url='#{session[:back_url]}'"
+  @client ||= EvernoteOAuth::Client.new(
+    consumer_key:OAUTH_CONSUMER_KEY,
+    consumer_secret:OAUTH_CONSUMER_SECRET,
+    sandbox: SANDBOX
+  )
+
   callback_url = request.url.
-    chomp("requesttoken").concat("callback")
+    chomp("request_token").concat("callback")
   begin
-    session[:request_token] = client.request_token(
+    session[:request_token] = @client.request_token(
       :oauth_callback => callback_url)
-    redirect '/authorize'
+    redirect '/oauth/authorize'
   rescue => e
     @last_error = "Error obtaining temporary credentials: #{e.message}"
     erb :error
   end
 end
 
-get '/authorize' do
+get '/oauth/authorize' do
   if request_token
     redirect authorize_url
   else
@@ -240,8 +256,7 @@ get '/authorize' do
   end
 end
 
-get '/callback' do
-
+get '/oauth/callback' do
   unless params[:oauth_verifier] || request_token
     @last_error = "Content owner did not authorize the temporary credentials"
     halt erb :error

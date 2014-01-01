@@ -44,6 +44,15 @@
       });
     }
 
+    function getBackURL() {
+      var center = map.getCenter();
+      var zoom = map.getZoom();
+      var lat = center.nb;
+      var lng = center.ob;
+      return window.location.origin + 
+        "?center=" + lat + "," + lng + "&zoom=" + zoom;
+    }
+
     function updateMap(center) {
       map.setCenter(center);
       marker.setPosition(map.getCenter());
@@ -69,8 +78,10 @@
       $("#myModal").modal("show");
 
       $.ajax({
-        url: "/latest_five_notes",
-        success: function(data) {
+        url: "/api/notes",
+        dataType: "json"
+      })
+      .done(function(data) {
           var notes = data.notes;
           var htmlCodes = [];
           for(var i = 0; i < notes.length; i++) {
@@ -82,9 +93,13 @@
           $("#note-list").html(htmlCodes.join(""));
           $("#notes").show();
           $("#load-icon").hide();
-        },
-        dataType: "json"
       })
+      .fail(function(xhr) {
+        if(xhr.status == 401) {
+          window.location.href = "oauth/request_token?back_url=" + 
+            encodeURIComponent(getBackURL());
+        }
+      });
     }
 
     function selectNote(note) {
