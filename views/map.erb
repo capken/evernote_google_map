@@ -10,7 +10,8 @@
   <script src="https://code.jquery.com/jquery.js"></script>
   <script src="//netdna.bootstrapcdn.com/bootstrap/3.0.3/js/bootstrap.min.js"></script>
   <script type="text/javascript" 
-    src="http://maps.googleapis.com/maps/api/js?key=AIzaSyA1l3GrctMRBhHg7V1htQvP_3_b5jggUuY&sensor=false"></script>
+    src="http://maps.googleapis.com/maps/api/js?key=AIzaSyA1l3GrctMRBhHg7V1htQvP_3_b5jggUuY&sensor=false">
+  </script>
   <script type="text/javascript">
 
     var init = {
@@ -24,6 +25,7 @@
 
     var map, geocoder, marker;
     var mapDiv, addInput;
+    var selectedNote = null;
 
     function initialize() {
       var options = {
@@ -61,8 +63,45 @@
     }
 
     function save() {
+      $("#notes").hide();
+      $("#load-icon").show();
+
       $("#myModal").modal("show");
 
+      $.ajax({
+        url: "/latest_five_notes",
+        success: function(data) {
+          var notes = data.notes;
+          var htmlCodes = [];
+          for(var i = 0; i < notes.length; i++) {
+            var note = notes[i];
+            htmlCodes.push('<a href="#" onclick="javascript:selectNote(this)" class="list-group-item" id="' + note.guid + '">' + 
+              note.title + '</a>');
+          }
+
+          $("#note-list").html(htmlCodes.join(""));
+          $("#notes").show();
+          $("#load-icon").hide();
+        },
+        dataType: "json"
+      })
+    }
+
+    function selectNote(note) {
+      if(selectedNote != note) {
+        if(selectedNote != null) {
+          selectedNote.classList.remove("active");
+        }
+        selectedNote = note;
+        selectedNote.classList.add("active");
+      }
+    }
+
+    function resetSelectedNote() {
+      if(selectedNote != null) {
+        selectedNote.classList.remove("active");
+        selectedNote = null;
+      }
     }
 
     google.maps.visualRefresh = true;
@@ -144,6 +183,15 @@
     .list-group {
       margin-bottom: 0px;
     }
+
+    #load-icon {
+      margin-top: 30px;
+      margin-bottom: 30px;
+    }
+
+    .modal-wide {
+      width: 450px;
+    }
   </style>
 </head>
 <body>
@@ -170,25 +218,25 @@
     </button>
   </div>
   <div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-wide">
       <div class="modal-content">
         <div class="modal-header">
           <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
           <h4 class="modal-title" id="myModalLabel">Save to Evernote</h4>
         </div>
-        <div class="modal-body" id="notes">
-          <div class="input-group">
-            <input type="text" class="form-control" placeholder="New note name">
+        <div class="modal-body">
+          <div id="load-icon" class="text-center">
+            <img src="images/ajax-loader.gif">
           </div>
-          <div class="text-center">
-            <h4>or select an exising note</h4>
-          </div>
-          <div class="list-group">
-            <a href="#" class="list-group-item active">Dapibus ac facilisis in</a>
-            <a href="#" class="list-group-item">Morbi leo risus</a>
-            <a href="#" class="list-group-item">Porta ac consectetur ac</a>
-            <a href="#" class="list-group-item">Vestibulum at eros</a>
-            <a href="#" class="list-group-item">Vestibulum at eros</a>
+          <div id="notes">
+            <div class="input-group">
+              <input type="text" onfocus="resetSelectedNote()" class="form-control" placeholder="New note name">
+            </div>
+            <div class="text-center">
+              <h4>or select an exising note</h4>
+            </div>
+            <div id="note-list" class="list-group" >
+            </div>
           </div>
         </div>
         <div class="modal-footer">
