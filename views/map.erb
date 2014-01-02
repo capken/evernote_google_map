@@ -17,9 +17,18 @@
     var init = {
       lat: 39.908715,
       lng: 116.3973889,
-      zoom: 14,
+      zoom: function() {
+        var match = location.href.match(/zoom=(\d+)/);
+        return match != null ? parseInt(match[1]) : 14
+      },
       center: function() {
-        return new google.maps.LatLng(init.lat, init.lng)
+        var match = location.href.match(/center=([\d.]+),([\d.]+)/);
+        if(match != null) {
+          return new google.maps.LatLng(
+            parseFloat(match[1]), parseFloat(match[2]));
+        } else {
+          return new google.maps.LatLng(init.lat, init.lng);
+        }
       }
     };
 
@@ -30,7 +39,7 @@
     function initialize() {
       var options = {
         center: init.center(),
-        zoom: init.zoom
+        zoom: init.zoom()
       };
 
       mapDiv = document.getElementById("map-canvas");

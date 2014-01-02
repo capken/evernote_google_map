@@ -227,16 +227,17 @@ end
 # oauth related routers
 
 get '/oauth/request_token' do
-  #session[:back_url] = params[:back_url]
-  #warn "back_url='#{session[:back_url]}'"
+  warn "/oauth/request_token"
   @client ||= EvernoteOAuth::Client.new(
     consumer_key:OAUTH_CONSUMER_KEY,
     consumer_secret:OAUTH_CONSUMER_SECRET,
     sandbox: SANDBOX
   )
 
-  callback_url = request.url.
-    chomp("request_token").concat("callback")
+  warn "request.url=" + request.url
+
+  callback_url = request.url.gsub("request_token", "callback")
+  warn "callback_url=" + callback_url
   begin
     session[:request_token] = @client.request_token(
       :oauth_callback => callback_url)
@@ -248,6 +249,7 @@ get '/oauth/request_token' do
 end
 
 get '/oauth/authorize' do
+  warn "/oauth/authorize"
   if request_token
     redirect authorize_url
   else
@@ -257,6 +259,7 @@ get '/oauth/authorize' do
 end
 
 get '/oauth/callback' do
+  warn "/oauth/callback"
   unless params[:oauth_verifier] || request_token
     @last_error = "Content owner did not authorize the temporary credentials"
     halt erb :error
@@ -266,7 +269,7 @@ get '/oauth/callback' do
     session[:access_token] = request_token.get_access_token(
       :oauth_verifier => params[:oauth_verifier]
     )
-    redirect '/'
+    redirect (params[:back_url] || '/')
   rescue => e
     @last_error = 'Error extracting access token'
     erb :error
