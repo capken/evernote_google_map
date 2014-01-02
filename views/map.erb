@@ -191,13 +191,12 @@
     }
 
     #address {
-      height: 1.82em;
       width: 400px;
     }
 
     #search-bar {
       position: fixed;
-      top: 25px;
+      top: 27px;
       left: 450px;
     }
     .input-group {
@@ -219,8 +218,8 @@
   </style>
 </head>
 <body>
-  <div class="pure-g" id="layout">
-    <div class="sidebar pure-u">
+  <div id="layout">
+    <div class="sidebar">
       <div class="header">
         <h1 class="brand-title">Map Note</h1>
         <h3 class="brand-tagline">Create Your Note with A Map</h3>
@@ -232,13 +231,13 @@
       </div>
     </div>
   </div>
-  <div id="search-bar">
-    <input id="address" placeholder="Enter your location" type="text">
-    <button class="pure-button pure-button-primary" onclick="search()">
-      <i class="icon-search"></i>
+  <div id="search-bar" class="form-inline">
+    <input id="address" class="form-control" placeholder="Enter your location" type="text">
+    <button type="button" class="btn btn-default" onclick="search()">
+      <span class="glyphicon glyphicon-search"></span>
     </button>
-    <button class="pure-button pure-button-primary" onclick="save()">
-      <i class="icon-save"></i>
+    <button type="button" class="btn btn-default" onclick="save()">
+      <span class="glyphicon glyphicon-floppy-save"></span>
     </button>
   </div>
   <div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
