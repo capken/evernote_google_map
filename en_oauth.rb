@@ -103,10 +103,8 @@ helpers do
     @hash ||= Digest::MD5.new
   end
   
-  def image_resource_of(location)
-    lat, lng = location.split ','
-
-    if dump_static_map(lat, lng, 14)
+  def image_resource_of(lat, lng, room)
+    if dump_static_map(lat, lng, room)
       image_data = File.open(
         map_image_path(lat, lng), "rb"
       ) { |io| io.read }
@@ -200,11 +198,10 @@ end
 
 # create a new note
 post '/api/notes' do
+  lat, lng, zoom = params["lat"], params["lng"], params["zoom"]
   note_name = URI.decode(params['note_name'])
 
-  location  = params['location']
-  resource = image_resource_of(location)
-
+  resource = image_resource_of(lat, lng, zoom)
   code, message = create_note(note_name, resource)
 
   status code
@@ -212,12 +209,11 @@ post '/api/notes' do
 end
 
 # update a note
-put '/api/update/:id' do
+put '/api/notes/:id' do
+  lat, lng, zoom = params["lat"], params["lng"], params["zoom"]
   guid = params['id']
 
-  location  = params['location']
-  resource = image_resource_of(location)
-
+  resource = image_resource_of(lat, lng, zoom)
   code, message = update_note(guid, resource)
 
   status code

@@ -49,7 +49,7 @@
       geocoder = new google.maps.Geocoder();
       marker = new google.maps.Marker({ 
         map: map,
-        animation: google.maps.Animation.BOUNCE
+        animation: google.maps.Animation.DROP
       });
     }
 
@@ -80,7 +80,7 @@
       });
     }
 
-    function save() {
+    function popupSaveDialog() {
       $("#notes").hide();
       $("#load-icon").show();
 
@@ -125,6 +125,41 @@
       if(selectedNote != null) {
         selectedNote.classList.remove("active");
         selectedNote = null;
+      }
+    }
+
+    function save() {
+      var center = map.getCenter();
+      var data = {
+        zoom: map.getZoom(),
+        lat: center.nb,
+        lng: center.ob
+      }
+
+      if(selectedNote == null) {
+        var noteName = $("#new-note-name").val();
+        data.note_name = encodeURIComponent(noteName);
+        $.ajax({
+          type: "POST",
+          dataType: "json",
+          url: "/api/notes",
+          data: data
+        }).done(function(data){
+          alert("OK");
+        }).fail(function(xhr){
+          alert("Failed");
+        });
+      } else {
+        $.ajax({
+          type: "PUT",
+          dataType: "json",
+          url: "/api/notes/" + selectedNote.id,
+          data: data
+        }).done(function(data){
+          alert("OK");
+        }).fail(function(xhr){
+          alert("Failed");
+        });
       }
     }
 
@@ -236,7 +271,7 @@
     <button type="button" class="btn btn-default" onclick="search()">
       <span class="glyphicon glyphicon-search"></span>
     </button>
-    <button type="button" class="btn btn-default" onclick="save()">
+    <button type="button" class="btn btn-default" onclick="popupSaveDialog()">
       <span class="glyphicon glyphicon-floppy-save"></span>
     </button>
   </div>
@@ -253,7 +288,7 @@
           </div>
           <div id="notes">
             <div class="input-group">
-              <input type="text" onfocus="resetSelectedNote()" class="form-control" placeholder="New note name">
+              <input type="text" id="new-note-name" onfocus="resetSelectedNote()" class="form-control" placeholder="New note name">
             </div>
             <div class="text-center">
               <h4>or select an exising note</h4>
@@ -264,7 +299,7 @@
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-          <button type="button" class="btn btn-primary">Save</button>
+          <button type="button" class="btn btn-primary" onclick="save()">Save</button>
         </div>
       </div>
     </div>
