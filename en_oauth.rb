@@ -127,13 +127,29 @@ helpers do
   def hash_hex_of(resource)
     hash_func.hexdigest(resource.data.body)
   end
+
+  def image_content(resource, link)
+    %Q{
+    <div>
+      <a shape="rect" href="#{link}">
+       <en-media type="image/png" hash="#{hash_hex_of(resource)}"></en-media>
+      </a>
+    </div>
+    }
+  end
+
+  def new_note_content(body)
+    %Q{<?xml version="1.0" encoding="UTF-8"?>
+    <!DOCTYPE en-note SYSTEM "http://xml.evernote.com/pub/enml2.dtd">
+    <en-note>#{body}</en-note>
+    }
+  end
   
-  def update_note(guid, resource)
+  def update_note(guid, resource, link)
     begin
       note = note_store.getNote(guid, true, true, true, true)
       note.resources << resource
-      note.content.gsub!(/<\/en-note>/,
-        "<en-media type=\"image/png\" hash=\"#{hash_hex_of(resource)}\" /></en-note>")
+      note.content.gsub!(/(?=<\/en-note>)/, image_content(resource, link))
       warn note.content
       note_store.updateNote(note)
       [200, {"guid" => note.guid}]
@@ -143,24 +159,26 @@ helpers do
     end
   end
   
-  def create_note(note_name, resource)
-    n_body = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
-    n_body += "<!DOCTYPE en-note SYSTEM \"http://xml.evernote.com/pub/enml2.dtd\">"
-    n_body += "<en-note><en-media type=\"image/png\" hash=\"#{hash_hex_of(resource)}\" /></en-note>"
-  
+  def create_note(note_name, resource, link)
+    warn image_content(resource, link)
     new_note = Type::Note.new
     new_note.title = note_name
     new_note.resources = [ resource ]
-    new_note.content = n_body
+    new_note.content = new_note_content(image_content(resource, link))
+    warn new_note.content
   
     begin
       note = note_store.createNote(new_note)
       [200, {"guid" => note.guid}]
     rescue Error::EDAMUserException => edue
       ## http://dev.evernote.com/documentation/reference/Errors.html#Enum_EDAMErrorCode
-      warn "EDAMUserException: #{edue}"
+      warn "EDAMUserException: #{edue.errorCode}"
       [500, {"error" => "EDAMUserException: #{edue}"}]
     end
+  end
+
+  def map_link(lat, lng, zoom)
+    "https://maps.google.com/maps?q=#{lat},#{lng}&amp;z=#{zoom}"
   end
 end
 
@@ -202,7 +220,9 @@ post '/api/notes' do
   note_name = URI.decode(params['note_name'])
 
   resource = image_resource_of(lat, lng, zoom)
-  code, message = create_note(note_name, resource)
+  link = map_link(lat, lng, zoom)
+
+  code, message = create_note(note_name, resource, link)
 
   status code
   json message
@@ -214,7 +234,9 @@ put '/api/notes/:id' do
   guid = params['id']
 
   resource = image_resource_of(lat, lng, zoom)
-  code, message = update_note(guid, resource)
+  link = map_link(lat, lng, zoom)
+
+  code, message = update_note(guid, resource, link)
 
   status code
   json message
