@@ -10,6 +10,14 @@ include Evernote::EDAM
 enable :sessions
 set :session_secret, 'super secret'
 
+enable :logging
+
+configure do
+  file = File.new("#{settings.root}/log/#{settings.environment}.log", 'a+')
+  file.sync = true
+  use Rack::CommonLogger, file
+end
+
 CACHE_DIR = "/tmp/evernote_map"
 Dir.mkdir(CACHE_DIR, 0700) unless File.directory? CACHE_DIR
 
@@ -29,27 +37,6 @@ helpers do
 
   def auth_token
     access_token ? access_token.token : nil
-  end
-
-  def client
-    @client ||= EvernoteOAuth::Client.new(
-      token: auth_token,
-      consumer_key:OAUTH_CONSUMER_KEY,
-      consumer_secret:OAUTH_CONSUMER_SECRET,
-      sandbox: SANDBOX
-    )
-  end
-
-  def user_store
-    @user_store ||= client.user_store
-  end
-
-  def note_store
-    @note_store ||= client.note_store
-  end
-
-  def en_user
-    user_store.getUser(auth_token)
   end
 
   def filter
@@ -147,11 +134,10 @@ helpers do
   
   def update_note(guid, resource, link)
     begin
-      note = note_store.getNote(guid, true, true, true, true)
+      note = @note_store.getNote(guid, true, true, true, true)
       note.resources << resource
       note.content.gsub!(/(?=<\/en-note>)/, image_content(resource, link))
-      warn note.content
-      note_store.updateNote(note)
+      @note_store.updateNote(note)
       [200, {"guid" => note.guid}]
     rescue Error::EDAMNotFoundException
       warn "EDAMNotFoundException: Invalid notebook GUID #{guid}"
@@ -160,15 +146,13 @@ helpers do
   end
   
   def create_note(note_name, resource, link)
-    warn image_content(resource, link)
     new_note = Type::Note.new
     new_note.title = note_name
     new_note.resources = [ resource ]
     new_note.content = new_note_content(image_content(resource, link))
-    warn new_note.content
   
     begin
-      note = note_store.createNote(new_note)
+      note = @note_store.createNote(new_note)
       [200, {"guid" => note.guid}]
     rescue Error::EDAMUserException => edue
       ## http://dev.evernote.com/documentation/reference/Errors.html#Enum_EDAMErrorCode
@@ -184,7 +168,7 @@ end
 
 before '/api/*' do
   if auth_token.nil?
-    warn "auth_token is nil"
+    logger.info "auth_token is nil"
     halt 401,  "auth token is invalid"
   else
     @client = EvernoteOAuth::Client.new(
@@ -219,6 +203,7 @@ post '/api/notes' do
   lat, lng, zoom = params["lat"], params["lng"], params["zoom"]
   note_name = URI.decode(params['note_name'])
 
+  logger.info "location='#{lat},#{lng},#{zoom}'"
   resource = image_resource_of(lat, lng, zoom)
   link = map_link(lat, lng, zoom)
 
@@ -233,6 +218,7 @@ put '/api/notes/:id' do
   lat, lng, zoom = params["lat"], params["lng"], params["zoom"]
   guid = params['id']
 
+  logger.info "location='#{lat},#{lng},#{zoom}'"
   resource = image_resource_of(lat, lng, zoom)
   link = map_link(lat, lng, zoom)
 
