@@ -52,6 +52,11 @@ function initialize() {
     map: map,
     animation: google.maps.Animation.DROP
   });
+  $('#address').keydown(function(event) {
+    if(event.keyCode == 13) {
+      search();
+    }
+  });
 }
 
 function updateUI(state) {
