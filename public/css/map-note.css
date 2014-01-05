@@ -3,7 +3,7 @@ html, body, .pure-u-1, .content, #map-canvas {
 }
 
 #layout {
-  padding-left: 360px;
+  padding-left: 320px;
   position: relative;
   height: 100%;
 }
@@ -12,8 +12,8 @@ html, body, .pure-u-1, .content, #map-canvas {
   position: fixed;
   top: 0;
   bottom: 0;
-  width: 360px;
-  margin-left: -360px;
+  width: 320px;
+  margin-left: -320px;
   background-color: rgb(24, 33, 61);
   color: #fff;
 }
@@ -47,7 +47,7 @@ html, body, .pure-u-1, .content, #map-canvas {
 #search-bar {
   position: fixed;
   top: 27px;
-  left: 450px;
+  left: 410px;
 }
 
 .list-group {
