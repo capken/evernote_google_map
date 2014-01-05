@@ -1,337 +1,86 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <title>Evernote with Google Map</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="stylesheet" href="http://netdna.bootstrapcdn.com/font-awesome/3.1.1/css/font-awesome.css">
-  <link rel="stylesheet" href="http://netdna.bootstrapcdn.com/font-awesome/3.1.1/css/font-awesome-ie7.css">
-  <script src="http://use.typekit.net/gis6vng.js"></script>
-  <link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css">
-  <script src="https://code.jquery.com/jquery.js"></script>
-  <script src="//netdna.bootstrapcdn.com/bootstrap/3.0.3/js/bootstrap.min.js"></script>
-  <script type="text/javascript" 
-    src="http://maps.googleapis.com/maps/api/js?key=AIzaSyA1l3GrctMRBhHg7V1htQvP_3_b5jggUuY&sensor=false">
-  </script>
-  <script type="text/javascript">
-
-    var uiState = {
-      "loading" : {
-        "load-icon" : true
-      },
-      "selection" : {
-        "notes" : true,
-        "save-button" : true
-      },
-      "success" : {
-        "success-message" : true
-      },
-      "error" : {
-        "error-message" : true
-      },
-    }
-
-    function updateUI(state) {
-      var allElements = ["notes", "save-button", "load-icon",
-        "success-message", "error-message"];
-      var meta = uiState[state];
-      for(var i = 0; i < allElements.length; i++) {
-        var id = allElements[i];
-        if(meta[id] === true) {
-          $("#" + id).show();
-        } else {
-          $("#" + id).hide();
-        }
-      }
-    }
-
-    var init = {
-      lat: 39.908715,
-      lng: 116.3973889,
-      zoom: function() {
-        var match = location.href.match(/zoom=(\d+)/);
-        return match != null ? parseInt(match[1]) : 14
-      },
-      center: function() {
-        var match = location.href.match(/center=([\d.]+),([\d.]+)/);
-        if(match != null) {
-          return new google.maps.LatLng(
-            parseFloat(match[1]), parseFloat(match[2]));
-        } else {
-          return new google.maps.LatLng(init.lat, init.lng);
-        }
-      }
-    };
-
-    var map, geocoder, marker;
-    var mapDiv, addInput;
-    var selectedNote = null;
-
-    function initialize() {
-      var options = {
-        center: init.center(),
-        zoom: init.zoom()
-      };
-
-      mapDiv = document.getElementById("map-canvas");
-      addInput = document.getElementById("address");
-
-      map = new google.maps.Map(mapDiv, options);
-      geocoder = new google.maps.Geocoder();
-      marker = new google.maps.Marker({ 
-        map: map,
-        animation: google.maps.Animation.DROP
-      });
-    }
-
-    function getBackURL() {
-      var center = map.getCenter();
-      var zoom = map.getZoom();
-      var lat = center.nb;
-      var lng = center.ob;
-      return window.location.origin + 
-        "?center=" + lat + "," + lng + "&zoom=" + zoom;
-    }
-
-    function updateMap(center) {
-      map.setCenter(center);
-      marker.setPosition(map.getCenter());
-      //marker.setAnimation(google.maps.Animation.DROP);
-    }
-
-    function search() {
-      var address = addInput.value;
-      geocoder.geocode( { "address": address }, function(data, status) {
-        if(status == google.maps.GeocoderStatus.OK) {
-          var loc = data[0].geometry.location;
-          updateMap(loc);
-        } else {
-          alert("Geocode was not successful for the following reason: " + status);
-        }
-      });
-    }
-
-    function popupSaveDialog() {
-      updateUI("loading");
-
-      $("#myModal").modal("show");
-
-      $.ajax({
-        url: "/api/notes",
-        dataType: "json"
-      })
-      .done(function(data) {
-          var notes = data.notes;
-          var htmlCodes = [];
-          for(var i = 0; i < notes.length; i++) {
-            var note = notes[i];
-            htmlCodes.push('<a href="#" onclick="javascript:selectNote(this)" class="list-group-item" id="' + note.guid + '">' + 
-              note.title + '</a>');
-          }
-
-          $("#note-list").html(htmlCodes.join(""));
-
-          updateUI("selection");
-      })
-      .fail(function(xhr) {
-        if(xhr.status == 401) {
-          window.location.href = "oauth/request_token?back_url=" + 
-            encodeURIComponent(getBackURL());
-        }
-      });
-    }
-
-    function selectNote(note) {
-      if(selectedNote != note) {
-        if(selectedNote != null) {
-          selectedNote.classList.remove("active");
-        }
-        selectedNote = note;
-        selectedNote.classList.add("active");
-      }
-    }
-
-    function resetSelectedNote() {
-      if(selectedNote != null) {
-        selectedNote.classList.remove("active");
-        selectedNote = null;
-      }
-    }
-
-
-    function save() {
-      var center = map.getCenter();
-      var data = {
-        zoom: map.getZoom(),
-        lat: center.nb,
-        lng: center.ob
-      }
-
-      updateUI("loading");
-
-      if(selectedNote == null) {
-        var noteName = $("#new-note-name").val();
-        data.note_name = encodeURIComponent(noteName);
-        $.ajax({
-          type: "POST",
-          dataType: "json",
-          url: "/api/notes",
-          data: data
-        }).done(function(data){
-          updateUI("success");
-          $("#note-link").attr("href", data.note_url);
-        }).fail(function(xhr){
-          updateUI("error");
-        });
-      } else {
-        $.ajax({
-          type: "PUT",
-          dataType: "json",
-          url: "/api/notes/" + selectedNote.id,
-          data: data
-        }).done(function(data){
-          updateUI("success");
-          $("#note-link").attr("href", data.note_url);
-        }).fail(function(xhr){
-          updateUI("error");
-        });
-      }
-    }
-
-    google.maps.visualRefresh = true;
-    google.maps.event.addDomListener(window, 'load', initialize);
-
-    try { Typekit.load(); } catch (e) {}
-  </script>
-
-  <style type="text/css">
-
-    #layout {
-      padding-left: 360px;
-      position: relative;
-      height: 100%;
-    }
-
-    .sidebar {
-      position: fixed;
-      top: 0;
-      bottom: 0;
-      width: 360px;
-      margin-left: -360px;
-      background-color: rgb(24, 33, 61);
-      color: #fff;
-    }
-
-    .header {
-      margin: 50% 2em 0;
-      text-align: right;
-    }
-
-    .brand-title,
-    .brand-tagline {
-      margin: 0;
-    }
-
-    .brand-title {
-      text-transform: uppercase;
-    }
-    .brand-tagline {
-      font-weight: 300;
-      color: rgb(142, 142, 214);
-    }
-
-    html, body, .pure-u-1, .content, #map-canvas {
-      height: 100%;
-    }
-
-    .input-group {
-      width: 100%;
-    }
-
-    #address {
-      width: 400px;
-    }
-
-    #search-bar {
-      position: fixed;
-      top: 27px;
-      left: 450px;
-    }
-
-    .list-group {
-      margin-bottom: 0px;
-    }
-
-    #load-icon, #success-message, #error-message {
-      margin-top: 30px;
-      margin-bottom: 30px;
-    }
-
-    .modal-wide {
-      width: 450px;
-    }
-  </style>
-</head>
-<body>
-  <div id="layout">
-    <div class="sidebar">
-      <div class="header">
-        <h1 class="brand-title">Map Note</h1>
-        <h3 class="brand-tagline">Create Your Note with A Map</h3>
-      </div>
-    </div>
-    <div class="pure-u-1">
-      <div class="content">
-        <div id="map-canvas"></div>
-      </div>
-    </div>
-  </div>
-  <div id="search-bar" class="form-inline">
-    <input id="address" class="form-control" placeholder="Enter your location" type="text">
-    <button type="button" class="btn btn-default" onclick="search()">
-      <span class="glyphicon glyphicon-search"></span>
-    </button>
-    <button type="button" class="btn btn-default" onclick="popupSaveDialog()">
-      <span class="glyphicon glyphicon-floppy-save"></span>
-    </button>
-  </div>
-  <div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-wide">
-      <div class="modal-content">
-        <div class="modal-header">
-          <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-          <h4 class="modal-title" id="myModalLabel">Save to Evernote</h4>
+  <head>
+    <title>Evernote with Google Map</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="http://netdna.bootstrapcdn.com/font-awesome/3.1.1/css/font-awesome.css">
+    <link rel="stylesheet" href="http://netdna.bootstrapcdn.com/font-awesome/3.1.1/css/font-awesome-ie7.css">
+    <script src="http://use.typekit.net/gis6vng.js"></script>
+    <link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css">
+    <link rel="stylesheet" href="css/map-note.css">
+    <script src="https://code.jquery.com/jquery.js"></script>
+    <script src="//netdna.bootstrapcdn.com/bootstrap/3.0.3/js/bootstrap.min.js"></script>
+    <script src="js/map-note.js"></script>
+    <script type="text/javascript" 
+      src="http://maps.googleapis.com/maps/api/js?key=AIzaSyA1l3GrctMRBhHg7V1htQvP_3_b5jggUuY&sensor=false">
+    </script>
+    <script type="text/javascript">
+      google.maps.visualRefresh = true;
+      google.maps.event.addDomListener(window, 'load', initialize);
+      try { Typekit.load(); } catch (e) {}
+    </script>
+  </head>
+  <body>
+    <div id="layout">
+      <div class="sidebar">
+        <div class="header">
+          <h1 class="brand-title">Map Note</h1>
+          <h3 class="brand-tagline">Create Your Note with A Map</h3>
         </div>
-        <div class="modal-body">
-          <div id="load-icon" class="text-center">
-            <img src="images/ajax-loader.gif">
-          </div>
-          <div id="success-message" class="text-center">
-            <h4>
-              Clipped this map into your <a id="note-link" href="#" target="_blank">note</a> successfully
-            </h4>
-          </div>
-          <div id="error-message" class="text-center">
-            <h4>
-              An error occurred, please try again later
-            </h4>
-          </div>
-          <div id="notes">
-            <div class="input-group">
-              <input type="text" id="new-note-name" onfocus="resetSelectedNote()" class="form-control" placeholder="New note name">
-            </div>
-            <div class="text-center">
-              <h4>or select an exising note</h4>
-            </div>
-            <div id="note-list" class="list-group" >
-            </div>
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-          <button id="save-button" type="button" class="btn btn-primary" onclick="save()">Save</button>
+      </div>
+      <div class="pure-u-1">
+        <div class="content">
+          <div id="map-canvas"></div>
         </div>
       </div>
     </div>
-  </div>
-</body>
+    <div id="search-bar" class="form-inline">
+      <input id="address" class="form-control" placeholder="Enter your location" type="text">
+      <button type="button" class="btn btn-default" onclick="search()">
+        <span class="glyphicon glyphicon-search"></span>
+      </button>
+      <button type="button" class="btn btn-default" onclick="popupSaveDialog()">
+        <span class="glyphicon glyphicon-floppy-save"></span>
+      </button>
+    </div>
+    <div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-wide">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+            <h4 class="modal-title" id="myModalLabel">Save to Evernote</h4>
+          </div>
+          <div class="modal-body">
+            <div id="load-icon" class="text-center">
+              <img src="images/ajax-loader.gif">
+            </div>
+            <div id="success-message" class="text-center">
+              <h4>
+                Clipped this map into your <a id="note-link" href="#" target="_blank">note</a> successfully
+              </h4>
+            </div>
+            <div id="error-message" class="text-center">
+              <h4>
+                An error occurred, please try again later
+              </h4>
+            </div>
+            <div id="notes">
+              <div class="input-group">
+                <input type="text" id="new-note-name" onfocus="resetSelectedNote()" class="form-control" placeholder="New note name">
+              </div>
+              <div class="text-center">
+                <h4>or select an exising note</h4>
+              </div>
+              <div id="note-list" class="list-group" >
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+            <button id="save-button" type="button" class="btn btn-primary" onclick="save()">Save</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
 </html>

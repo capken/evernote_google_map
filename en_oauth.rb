@@ -145,7 +145,7 @@ helpers do
       user = @user_store.getUser
       [200, {"note_url" => note_url(note, user)}]
     rescue Error::EDAMNotFoundException
-      warn "EDAMNotFoundException: Invalid notebook GUID #{guid}"
+      logger.info "EDAMNotFoundException: Invalid notebook GUID #{guid}"
       [404, {"error" => "Note not found: #{guid}"}]
     end
   end
@@ -184,7 +184,7 @@ before '/api/*' do
       @user_store = @client.user_store
       @note_store = @client.note_store
     rescue Error::EDAMUserException => e
-      warn "auth token is invalid"
+      logger.error "auth token is invalid"
       halt(401, "auth token is invalid") if e.errorCode == Error::EDAMErrorCode::AUTH_EXPIRED
     end
   end
@@ -255,7 +255,6 @@ get '/oauth/request_token' do
 end
 
 get '/oauth/authorize' do
-  warn "/oauth/authorize"
   if request_token
     redirect authorize_url
   else
@@ -265,7 +264,6 @@ get '/oauth/authorize' do
 end
 
 get '/oauth/callback' do
-  warn "/oauth/callback"
   unless params[:oauth_verifier] || request_token
     @last_error = "Content owner did not authorize the temporary credentials"
     halt erb :error
@@ -282,7 +280,7 @@ get '/oauth/callback' do
   end
 end
 
-get '/reset' do
+get '/oauth/reset' do
   session.clear
   redirect '/'
 end
