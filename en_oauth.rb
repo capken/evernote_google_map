@@ -53,6 +53,10 @@ helpers do
     return @spec
   end
 
+  def note_url(note, user)
+    "https://sandbox.evernote.com/shard/#{user.shardId}/view/notebook/#{note.guid}"
+  end
+
   def latest_notes(max)
     @note_store.findNotesMetadata(
       auth_token, filter, 0, max, spec
@@ -138,7 +142,8 @@ helpers do
       note.resources << resource
       note.content.gsub!(/(?=<\/en-note>)/, image_content(resource, link))
       @note_store.updateNote(note)
-      [200, {"guid" => note.guid}]
+      user = @user_store.getUser
+      [200, {"note_url" => note_url(note, user)}]
     rescue Error::EDAMNotFoundException
       warn "EDAMNotFoundException: Invalid notebook GUID #{guid}"
       [404, {"error" => "Note not found: #{guid}"}]
@@ -153,11 +158,11 @@ helpers do
   
     begin
       note = @note_store.createNote(new_note)
-      [200, {"guid" => note.guid}]
+      user = @user_store.getUser
+      [200, {"note_url" => note_url(note, user)}]
     rescue Error::EDAMUserException => edue
       ## http://dev.evernote.com/documentation/reference/Errors.html#Enum_EDAMErrorCode
-      warn "EDAMUserException: #{edue.errorCode}"
-      [500, {"error" => "EDAMUserException: #{edue}"}]
+      [500, {"error" => "EDAMUserException: #{edue.errorCode}"}]
     end
   end
 
@@ -231,17 +236,14 @@ end
 # oauth related routers
 
 get '/oauth/request_token' do
-  warn "/oauth/request_token"
   @client ||= EvernoteOAuth::Client.new(
     consumer_key:OAUTH_CONSUMER_KEY,
     consumer_secret:OAUTH_CONSUMER_SECRET,
     sandbox: SANDBOX
   )
 
-  warn "request.url=" + request.url
-
   callback_url = request.url.gsub("request_token", "callback")
-  warn "callback_url=" + callback_url
+  logger.info "callback_url=" + callback_url
   begin
     session[:request_token] = @client.request_token(
       :oauth_callback => callback_url)

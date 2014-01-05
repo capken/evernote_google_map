@@ -14,6 +14,36 @@
   </script>
   <script type="text/javascript">
 
+    var uiState = {
+      "loading" : {
+        "load-icon" : true
+      },
+      "selection" : {
+        "notes" : true,
+        "save-button" : true
+      },
+      "success" : {
+        "success-message" : true
+      },
+      "error" : {
+        "error-message" : true
+      },
+    }
+
+    function updateUI(state) {
+      var allElements = ["notes", "save-button", "load-icon",
+        "success-message", "error-message"];
+      var meta = uiState[state];
+      for(var i = 0; i < allElements.length; i++) {
+        var id = allElements[i];
+        if(meta[id] === true) {
+          $("#" + id).show();
+        } else {
+          $("#" + id).hide();
+        }
+      }
+    }
+
     var init = {
       lat: 39.908715,
       lng: 116.3973889,
@@ -81,8 +111,7 @@
     }
 
     function popupSaveDialog() {
-      $("#notes").hide();
-      $("#load-icon").show();
+      updateUI("loading");
 
       $("#myModal").modal("show");
 
@@ -100,8 +129,8 @@
           }
 
           $("#note-list").html(htmlCodes.join(""));
-          $("#notes").show();
-          $("#load-icon").hide();
+
+          updateUI("selection");
       })
       .fail(function(xhr) {
         if(xhr.status == 401) {
@@ -128,6 +157,7 @@
       }
     }
 
+
     function save() {
       var center = map.getCenter();
       var data = {
@@ -135,6 +165,8 @@
         lat: center.nb,
         lng: center.ob
       }
+
+      updateUI("loading");
 
       if(selectedNote == null) {
         var noteName = $("#new-note-name").val();
@@ -145,9 +177,10 @@
           url: "/api/notes",
           data: data
         }).done(function(data){
-          alert("OK");
+          updateUI("success");
+          $("#note-link").attr("href", data.note_url);
         }).fail(function(xhr){
-          alert("Failed");
+          updateUI("error");
         });
       } else {
         $.ajax({
@@ -156,9 +189,10 @@
           url: "/api/notes/" + selectedNote.id,
           data: data
         }).done(function(data){
-          alert("OK");
+          updateUI("success");
+          $("#note-link").attr("href", data.note_url);
         }).fail(function(xhr){
-          alert("Failed");
+          updateUI("error");
         });
       }
     }
@@ -170,10 +204,6 @@
   </script>
 
   <style type="text/css">
-
-    #map-canvas {
-      height: 100%;
-    }
 
     #layout {
       padding-left: 360px;
@@ -209,20 +239,12 @@
       color: rgb(142, 142, 214);
     }
 
-    .content {
+    html, body, .pure-u-1, .content, #map-canvas {
       height: 100%;
     }
 
-    body {
-      height: 100%;
-    }
-
-    html {
-      height: 100%;
-    }
-
-    .pure-u-1 {
-      height: 100%;
+    .input-group {
+      width: 100%;
     }
 
     #address {
@@ -234,15 +256,12 @@
       top: 27px;
       left: 450px;
     }
-    .input-group {
-      width: 100%;
-    }
 
     .list-group {
       margin-bottom: 0px;
     }
 
-    #load-icon {
+    #load-icon, #success-message, #error-message {
       margin-top: 30px;
       margin-bottom: 30px;
     }
@@ -286,6 +305,16 @@
           <div id="load-icon" class="text-center">
             <img src="images/ajax-loader.gif">
           </div>
+          <div id="success-message" class="text-center">
+            <h4>
+              Clipped this map into your <a id="note-link" href="#" target="_blank">note</a> successfully
+            </h4>
+          </div>
+          <div id="error-message" class="text-center">
+            <h4>
+              An error occurred, please try again later
+            </h4>
+          </div>
           <div id="notes">
             <div class="input-group">
               <input type="text" id="new-note-name" onfocus="resetSelectedNote()" class="form-control" placeholder="New note name">
@@ -299,7 +328,7 @@
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-          <button type="button" class="btn btn-primary" onclick="save()">Save</button>
+          <button id="save-button" type="button" class="btn btn-primary" onclick="save()">Save</button>
         </div>
       </div>
     </div>
