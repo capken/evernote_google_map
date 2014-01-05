@@ -1,3 +1,4 @@
+
 var init = {
   lat: 39.908715,
   lng: 116.3973889,
@@ -84,14 +85,16 @@ function updateMap(center) {
 
 function search() {
   var address = addInput.value;
-  geocoder.geocode( { "address": address }, function(data, status) {
-    if(status == google.maps.GeocoderStatus.OK) {
-      var loc = data[0].geometry.location;
-      updateMap(loc);
-    } else {
-      alert("Geocode was not successful for the following reason: " + status);
-    }
-  });
+  if(address.trim() !== "") {
+    geocoder.geocode( { "address": address }, function(data, status) {
+      if(status == google.maps.GeocoderStatus.OK) {
+        var loc = data[0].geometry.location;
+        updateMap(loc);
+      } else {
+        alert("Location not found!");
+      }
+    });
+  }
 }
 
 function popupSaveDialog() {
