@@ -119,11 +119,21 @@ helpers do
     hash_func.hexdigest(resource.data.body)
   end
 
+  def image_style
+    [
+      "padding: 5px;",
+      "background-color: white;",
+      "box-shadow: 0 1px 3px rgba(34, 25, 25, 0.4);",
+      "-moz-box-shadow: 0 1px 2px rgba(34,25,25,0.4);",
+      "-webkit-box-shadow: 0 1px 3px rgba(34, 25, 25, 0.4);"
+    ].join
+  end
+
   def image_content(resource, link)
     %Q{
     <div>
       <a shape="rect" href="#{link}">
-       <en-media type="image/png" hash="#{hash_hex_of(resource)}"></en-media>
+        <en-media type="image/png" style="#{image_style}" hash="#{hash_hex_of(resource)}"></en-media>
       </a>
     </div>
     }
@@ -155,6 +165,7 @@ helpers do
     new_note.title = note_name
     new_note.resources = [ resource ]
     new_note.content = new_note_content(image_content(resource, link))
+    warn new_note.content
   
     begin
       note = @note_store.createNote(new_note)
