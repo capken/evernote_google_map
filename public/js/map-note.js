@@ -17,7 +17,7 @@ var init = {
   }
 };
 
-var map, geocoder, marker;
+var map, geocoder, marker, clippedArea;
 var mapDiv, addInput;
 var selectedNote = null;
 
@@ -52,11 +52,50 @@ function initialize() {
     map: map,
     animation: google.maps.Animation.DROP
   });
+
+  clippedArea = new google.maps.Rectangle();
+
+  google.maps.event.addListener(map, 'zoom_changed', function() {
+    clippedArea.setOptions(rectOptions());
+  });
+
+  google.maps.event.addListener(map, 'center_changed', function() {
+    clippedArea.setOptions(rectOptions());
+  });
+
   $('#address').keydown(function(event) {
     if(event.keyCode == 13) {
       search();
     }
   });
+}
+
+function rectOptions() {
+  return {
+    strokeOpacity: 0,
+    fillColor: '#FF0000',
+    fillOpacity: 0.15,
+    map: map,
+    bounds: clippedBounds()
+  }
+}
+
+function clippedBounds() {
+  var proj = map.getProjection();
+  var center = proj.fromLatLngToPoint(map.getCenter());
+
+  var scale = Math.pow(2, map.getZoom());
+  var tl = new google.maps.Point(
+    center.x - 300/scale,
+    center.y - 225/scale);
+  var br = new google.maps.Point(
+    center.x + 300/scale,
+    center.y + 225/scale);
+
+  return new google.maps.LatLngBounds(
+    proj.fromPointToLatLng(tl),
+    proj.fromPointToLatLng(br)
+  );
 }
 
 function updateUI(state) {
