@@ -205,6 +205,12 @@ function save() {
     lng: center.ob
   }
 
+  var mp = marker.getPosition();
+  if(typeof mp !== "undefined") {
+    data["mlat"] = mp.lat();
+    data["mlng"] = mp.lng();
+  }
+
   updateUI("loading");
 
   if(selectedNote == null) {

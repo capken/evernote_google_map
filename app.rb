@@ -75,7 +75,7 @@ helpers do
     "#{CACHE_DIR}/#{map_image_name(lat, lng)}"
   end
 
-  def dump_static_map(lat, lng, zoom)
+  def dump_static_map(lat, lng, zoom, marker)
     params = {
       :center => "#{lat},#{lng}",
       :zoom => zoom,
@@ -83,9 +83,16 @@ helpers do
       :size => "600x450",
       :maptype => "roadmap",
       :sensor => false
-    }.map { |k,v| "#{k}=#{v}" }.join("&")
+    }
+
+    params[:markers] = 
+      "color:red|label:|#{marker.lat},#{marker.lng}" if marker
+    
+    params = params.map { |k,v| "#{k}=#{v}" }.join("&")
 
     url = [map_provider_endpoint, "?", params].join
+
+    warn url
 
     system("curl \"#{url}\" -o #{map_image_path(lat, lng)}")
   end
@@ -94,8 +101,8 @@ helpers do
     @hash ||= Digest::MD5.new
   end
   
-  def image_resource_of(lat, lng, room)
-    if dump_static_map(lat, lng, room)
+  def image_resource_of(lat, lng, room, marker)
+    if dump_static_map(lat, lng, room, marker)
       image_data = File.open(
         map_image_path(lat, lng), "rb"
       ) { |io| io.read }
@@ -217,10 +224,18 @@ end
 # create a new note
 post '/api/notes' do
   lat, lng, zoom = params["lat"], params["lng"], params["zoom"]
+
+  marker = nil
+  if params["mlat"] and params["mlng"]
+    marker = OpenStruct.new
+    marker.lat = params["mlat"] 
+    marker.lng = params["mlng"] 
+  end
+
   note_name = URI.decode(params['note_name'])
 
   logger.info "location='#{lat},#{lng},#{zoom}'"
-  resource = image_resource_of(lat, lng, zoom)
+  resource = image_resource_of(lat, lng, zoom, marker)
   link = map_link(lat, lng, zoom)
 
   code, message = create_note(note_name, resource, link)
@@ -232,10 +247,18 @@ end
 # update a note
 put '/api/notes/:id' do
   lat, lng, zoom = params["lat"], params["lng"], params["zoom"]
+
+  marker = nil
+  if params["mlat"] and params["mlng"]
+    marker = OpenStruct.new
+    marker.lat = params["mlat"] 
+    marker.lng = params["mlng"] 
+  end
+
   guid = params['id']
 
   logger.info "location='#{lat},#{lng},#{zoom}'"
-  resource = image_resource_of(lat, lng, zoom)
+  resource = image_resource_of(lat, lng, zoom, marker)
   link = map_link(lat, lng, zoom)
 
   code, message = update_note(guid, resource, link)
