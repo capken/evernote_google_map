@@ -50,10 +50,25 @@ function initialize() {
   geocoder = new google.maps.Geocoder();
   marker = new google.maps.Marker({ 
     map: map,
+    draggable: true,
     animation: google.maps.Animation.DROP
   });
 
+  initClippedArea();
+
+  $('#address').keydown(function(event) {
+    if(event.keyCode == 13) {
+      search();
+    }
+  });
+}
+
+function initClippedArea() {
   clippedArea = new google.maps.Rectangle();
+
+  google.maps.event.addListenerOnce(map, 'idle', function() {
+    clippedArea.setOptions(rectOptions());
+  });
 
   google.maps.event.addListener(map, 'zoom_changed', function() {
     clippedArea.setOptions(rectOptions());
@@ -61,12 +76,6 @@ function initialize() {
 
   google.maps.event.addListener(map, 'center_changed', function() {
     clippedArea.setOptions(rectOptions());
-  });
-
-  $('#address').keydown(function(event) {
-    if(event.keyCode == 13) {
-      search();
-    }
   });
 }
 
