@@ -51,7 +51,8 @@ function initialize() {
   marker = new google.maps.Marker({ 
     map: map,
     draggable: true,
-    animation: google.maps.Animation.DROP
+    animation: google.maps.Animation.DROP,
+    position: init.center()
   });
 
   initClippedArea();
@@ -124,8 +125,8 @@ function updateUI(state) {
 function getBackURL() {
   var center = map.getCenter();
   var zoom = map.getZoom();
-  var lat = center.nb;
-  var lng = center.ob;
+  var lat = center.lat();
+  var lng = center.lng();
   return window.location.origin + 
     "?center=" + lat + "," + lng + "&zoom=" + zoom;
 }
@@ -201,8 +202,8 @@ function save() {
   var center = map.getCenter();
   var data = {
     zoom: map.getZoom(),
-    lat: center.nb,
-    lng: center.ob
+    lat: center.lat(),
+    lng: center.lng()
   }
 
   var mp = marker.getPosition();

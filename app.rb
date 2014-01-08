@@ -97,6 +97,17 @@ helpers do
     system("curl \"#{url}\" -o #{map_image_path(lat, lng)}")
   end
 
+  def get_marker(params)
+    marker = nil
+    if params["mlat"] and params["mlng"]
+      marker = OpenStruct.new
+      marker.lat = params["mlat"] 
+      marker.lng = params["mlng"] 
+    end
+
+    return marker
+  end
+
   def hash_func
     @hash ||= Digest::MD5.new
   end
@@ -185,7 +196,7 @@ helpers do
   end
 
   def map_link(lat, lng, zoom)
-    "https://maps.google.com/maps?q=#{lat},#{lng}&amp;z=#{zoom}"
+    "https://maps.google.com/maps?q=loc:#{lat},#{lng}&amp;z=#{zoom}"
   end
 end
 
@@ -221,22 +232,16 @@ get '/api/notes' do
   json :notes => notes 
 end
 
+
 # create a new note
 post '/api/notes' do
   lat, lng, zoom = params["lat"], params["lng"], params["zoom"]
-
-  marker = nil
-  if params["mlat"] and params["mlng"]
-    marker = OpenStruct.new
-    marker.lat = params["mlat"] 
-    marker.lng = params["mlng"] 
-  end
-
+  marker = get_marker params
   note_name = URI.decode(params['note_name'])
 
   logger.info "location='#{lat},#{lng},#{zoom}'"
   resource = image_resource_of(lat, lng, zoom, marker)
-  link = map_link(lat, lng, zoom)
+  link = map_link(marker.lat, marker.lng, zoom)
 
   code, message = create_note(note_name, resource, link)
 
@@ -247,19 +252,12 @@ end
 # update a note
 put '/api/notes/:id' do
   lat, lng, zoom = params["lat"], params["lng"], params["zoom"]
-
-  marker = nil
-  if params["mlat"] and params["mlng"]
-    marker = OpenStruct.new
-    marker.lat = params["mlat"] 
-    marker.lng = params["mlng"] 
-  end
-
+  marker = get_marker params
   guid = params['id']
 
   logger.info "location='#{lat},#{lng},#{zoom}'"
   resource = image_resource_of(lat, lng, zoom, marker)
-  link = map_link(lat, lng, zoom)
+  link = map_link(marker.lat, marker.lng, zoom)
 
   code, message = update_note(guid, resource, link)
 
