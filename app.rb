@@ -31,12 +31,8 @@ helpers do
     request_token.authorize_url
   end
 
-  def access_token
-    session[:access_token]
-  end
-
   def auth_token
-    access_token ? access_token.token : nil
+    session[:auth_token]
   end
 
   def filter
@@ -232,7 +228,6 @@ get '/api/notes' do
   json :notes => notes 
 end
 
-
 # create a new note
 post '/api/notes' do
   lat, lng, zoom = params["lat"], params["lng"], params["zoom"]
@@ -302,9 +297,11 @@ get '/oauth/callback' do
   end
 
   begin
-    session[:access_token] = request_token.get_access_token(
+    access_token = request_token.get_access_token(
       :oauth_verifier => params[:oauth_verifier]
     )
+    session.clear
+    session[:auth_token] = access_token.token
     redirect (params[:back_url] || '/')
   rescue => e
     @last_error = 'Error extracting access token'
