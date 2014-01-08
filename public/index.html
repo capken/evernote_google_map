@@ -3,8 +3,7 @@
   <head>
     <title>Evernote with Google Map</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="http://netdna.bootstrapcdn.com/font-awesome/3.1.1/css/font-awesome.css">
-    <link rel="stylesheet" href="http://netdna.bootstrapcdn.com/font-awesome/3.1.1/css/font-awesome-ie7.css">
+    <link href="//netdna.bootstrapcdn.com/font-awesome/4.0.3/css/font-awesome.css" rel="stylesheet">
     <script src="http://use.typekit.net/gis6vng.js"></script>
     <link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css">
     <link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap-theme.min.css">
@@ -25,8 +24,14 @@
     <div id="layout">
       <div class="sidebar">
         <div class="header">
-          <h1 class="brand-title">Map Note</h1>
-          <h4 class="brand-tagline">Clip a map into your evernote</h4>
+          <h1 class="brand-title">Map Clipper</h1>
+          <h3 class="brand-tagline">Clip a map into your note</h3>
+          <div class="share-links">
+            <a href="http://twitter.com/share?url=map-note.com" onclick="javascript:window.open(this.href,
+              '', 'menubar=no,toolbar=no,resizable=yes,scrollbars=yes,height=600,width=600');return false;"><i class="fa fa-twitter fa-lg"></i></a>
+            <a href="https://plus.google.com/share?url=map-note.com" onclick="javascript:window.open(this.href,
+              '', 'menubar=no,toolbar=no,resizable=yes,scrollbars=yes,height=600,width=600');return false;"><i class="fa fa-google-plus fa-lg"></i></a>
+          </div>
         </div>
       </div>
       <div class="pure-u-1">

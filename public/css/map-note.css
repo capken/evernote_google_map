@@ -23,15 +23,21 @@ html, body, .pure-u-1, .content, #map-canvas {
   text-align: right;
 }
 
+.share-links {
+  font-size: 14px;
+  margin-top: 8px;
+}
+
 .brand-title,
 .brand-tagline {
   margin: 0;
 }
 
 .brand-title {
-  text-transform: uppercase;
 }
+
 .brand-tagline {
+  margin-top: 5px;
   font-weight: 300;
   color: rgb(142, 142, 214);
 }
