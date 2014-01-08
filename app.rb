@@ -7,8 +7,11 @@ require "evernote_config.rb"
 
 include Evernote::EDAM
 
-enable :sessions
-set :session_secret, 'super secret'
+use Rack::Session::Cookie, :key => 'rack.session',
+                           :domain => 'localhost',
+                           :path => '/',
+                           :expire_after => 3600*24*30, # one month
+                           :secret => 'change_me'
 
 enable :logging
 
