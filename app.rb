@@ -8,9 +8,8 @@ require "evernote_config.rb"
 include Evernote::EDAM
 
 use Rack::Session::Cookie, :key => 'rack.session',
-                           :domain => 'localhost',
-                           :path => '/',
-                           :expire_after => 3600*24*30, # one month
+                           #:domain => 'localhost',
+                           :expire_after => 2592000, # one month
                            :secret => 'change_me'
 
 enable :logging
@@ -90,8 +89,6 @@ helpers do
     params = params.map { |k,v| "#{k}=#{v}" }.join("&")
 
     url = [map_provider_endpoint, "?", params].join
-
-    warn url
 
     system("curl \"#{url}\" -o #{map_image_path(lat, lng)}")
   end
@@ -219,7 +216,7 @@ before '/api/*' do
 end
 
 get '/' do
-  erb :map
+  redirect '/index.html'
 end
 
 get '/api/notes' do
