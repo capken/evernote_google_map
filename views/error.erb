@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>Map Clipper</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="//netdna.bootstrapcdn.com/font-awesome/4.0.3/css/font-awesome.css" rel="stylesheet">
+    <script src="http://use.typekit.net/gis6vng.js"></script>
+    <link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css">
+    <link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap-theme.min.css">
+    <link rel="stylesheet" href="/css/map-note.css">
+    <script src="https://code.jquery.com/jquery.js"></script>
+    <script src="//netdna.bootstrapcdn.com/bootstrap/3.0.3/js/bootstrap.min.js"></script>
+    <script src="/js/map-note.js"></script>
+    <script type="text/javascript" 
+      src="http://maps.googleapis.com/maps/api/js?key=AIzaSyA1l3GrctMRBhHg7V1htQvP_3_b5jggUuY&sensor=false">
+    </script>
+    <script type="text/javascript">
+      try { Typekit.load(); } catch (e) {}
+    </script>
+  </head>
+  <body>
+    <div id="layout">
+      <div class="sidebar">
+        <div class="header">
+          <h1 class="brand-title">Map Clipper</h1>
+          <h3 class="brand-tagline">Clip a map into your note</h3>
+          <div class="share-links">
+            <a href="https://www.facebook.com/sharer/sharer.php?u=http%3A%2F%2Fmap-note.com" onclick="shareLink(this); return false">
+              <i class="fa fa-facebook-square"></i>
+            </a>
+            <a href="http://twitter.com/share?url=http%3A%2F%2Fmap-note.com" onclick="shareLink(this); return false">
+              <i class="fa fa-twitter-square"></i>
+            </a>
+            <a href="https://plus.google.com/share?url=http%3A%2F%2Fmap-note.com" onclick="shareLink(this); return false">
+              <i class="fa fa-google-plus-square"></i>
+            </a>
+          </div>
+        </div>
+      </div>
+      <div class="pure-u-1">
+        <div class="content">
+          <div id="map-canvas">
+            <h2 class="text-center">An error occurred, please <a href="/oauth/reset">try</a> again later.</h2>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

@@ -313,16 +313,3 @@ get '/oauth/reset' do
   session.clear
   redirect '/'
 end
-
-__END__
-
-@@ error 
-<html>
-<head>
-  <title>Evernote Ruby Example App &mdash; Error</title>
-</head>
-<body>
-  <p>An error occurred: <%= @last_error %></p>
-  <p>Please <a href="/reset">start over</a>.</p>
-</body>
-</html>
