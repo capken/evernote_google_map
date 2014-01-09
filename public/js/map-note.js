@@ -133,8 +133,8 @@ function getBackURL() {
 
 function updateMap(center) {
   map.setCenter(center);
+  marker.setAnimation(google.maps.Animation.DROP);
   marker.setPosition(map.getCenter());
-  //marker.setAnimation(google.maps.Animation.DROP);
 }
 
 function search() {
@@ -246,6 +246,10 @@ function save() {
       updateUI("error");
     });
   }
+}
+
+function moveMarker() {
+  updateMap(map.getCenter());
 }
 
 function shareLink(link) {
