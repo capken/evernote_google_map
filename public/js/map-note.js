@@ -247,3 +247,8 @@ function save() {
     });
   }
 }
+
+function shareLink(link) {
+  window.open(link.href, '',
+    'menubar=no,toolbar=no,resizable=yes,scrollbars=yes,height=600,width=600');
+}

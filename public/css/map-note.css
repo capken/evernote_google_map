@@ -28,6 +28,10 @@ html, body, .pure-u-1, .content, #map-canvas {
   margin-top: 8px;
 }
 
+.share-links a {
+  color: white;
+}
+
 .brand-title,
 .brand-tagline {
   margin: 0;
