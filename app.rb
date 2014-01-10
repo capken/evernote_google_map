@@ -52,7 +52,8 @@ helpers do
   end
 
   def note_url(note, user)
-    "https://sandbox.evernote.com/shard/#{user.shardId}/view/notebook/#{note.guid}"
+    host = SANDBOX ? 'sandbox' : 'www'
+    "https://#{host}.evernote.com/shard/#{user.shardId}/view/notebook/#{note.guid}"
   end
 
   def latest_notes(max)
