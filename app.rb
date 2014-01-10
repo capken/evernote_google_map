@@ -169,7 +169,7 @@ helpers do
       user = @user_store.getUser
       [200, {"note_url" => note_url(note, user)}]
     rescue Error::EDAMNotFoundException
-      logger.info "EDAMNotFoundException: Invalid notebook GUID #{guid}"
+      logger.error "EDAMNotFoundException: Invalid notebook GUID #{guid}"
       [404, {"error" => "Note not found: #{guid}"}]
     end
   end
@@ -179,7 +179,7 @@ helpers do
     new_note.title = note_name
     new_note.resources = [ resource ]
     new_note.content = new_note_content(image_content(resource, link))
-    warn new_note.content
+    logger.debug new_note.content
   
     begin
       note = @note_store.createNote(new_note)
@@ -216,7 +216,10 @@ before '/api/*' do
 end
 
 get '/' do
-  redirect '/index.html'
+  index_page = '/index.html'
+  index_page += "?" + params.map { |k,v|
+    "#{k}=#{v}" }.join("&") unless params.empty?
+  redirect index_page
 end
 
 get '/api/notes' do
