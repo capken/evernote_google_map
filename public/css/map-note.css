@@ -60,6 +60,10 @@ html, body, .pure-u-1, .content, #map-canvas {
   left: 410px;
 }
 
+#search-bar button {
+  width: 36px;
+}
+
 .list-group {
   margin-bottom: 0px;
 }
