@@ -1,6 +1,5 @@
 require 'sinatra'
 require 'sinatra/json'
-require 'uri'
 
 $LOAD_PATH.push(File.expand_path(File.dirname(__FILE__)))
 require "evernote_config.rb"
@@ -236,7 +235,7 @@ end
 post '/api/notes' do
   lat, lng, zoom = params["lat"], params["lng"], params["zoom"]
   marker = get_marker params
-  note_name = URI.decode(params['note_name'])
+  note_name = params['note_name']
 
   logger.info "location='#{lat},#{lng},#{zoom}'"
   resource = image_resource_of(lat, lng, zoom, marker)

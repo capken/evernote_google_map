@@ -78,6 +78,12 @@ function initClippedArea() {
   google.maps.event.addListener(map, 'center_changed', function() {
     clippedArea.setOptions(rectOptions());
   });
+
+  google.maps.event.addListener(clippedArea, 'mousemove', function(event) {
+    var lat = event.latLng.lat();
+    var lng = event.latLng.lng();
+    //map.setOptions({ draggableCursor: 'crosshair' });
+  });
 }
 
 function rectOptions() {
@@ -216,7 +222,7 @@ function save() {
 
   if(selectedNote == null) {
     var noteName = $("#new-note-name").val();
-    data.note_name = encodeURIComponent(noteName);
+    data.note_name = noteName;
 
     $.ajax({
       type: "POST",
