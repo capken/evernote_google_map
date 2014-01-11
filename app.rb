@@ -194,6 +194,11 @@ helpers do
   def map_link(lat, lng, zoom)
     "https://maps.google.com/maps?q=loc:#{lat},#{lng}&amp;z=#{zoom}"
   end
+
+  def profile(msg)
+    @start ||= Time.now
+    logger.error "#{msg} ===> #{Time.now - @start}"
+  end
 end
 
 before '/api/*' do
@@ -201,13 +206,17 @@ before '/api/*' do
     logger.info "auth_token is nil"
     halt 401,  "auth token is invalid"
   else
+    profile "Start"
     @client = EvernoteOAuth::Client.new(
       token: auth_token,
       sandbox: SANDBOX
     )
+    profile "New Client"
     begin
       @user_store = @client.user_store
+      profile "User Store"
       @note_store = @client.note_store
+      profile "Note Store"
     rescue Error::EDAMUserException => e
       logger.error "auth token is invalid"
       halt(401, "auth token is invalid") if e.errorCode == Error::EDAMErrorCode::AUTH_EXPIRED
@@ -227,6 +236,7 @@ get '/api/notes' do
   latest_notes(5).each do |note|
     notes << { "guid" => note.guid, "title" => note.title }
   end
+  profile "List 5 Notes"
 
   json :notes => notes 
 end
