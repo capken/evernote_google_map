@@ -36,6 +36,14 @@ helpers do
     session[:auth_token]
   end
 
+  def user_name
+    session[:user_name]
+  end
+
+  def shard_id
+    session[:shard_id]
+  end
+
   def filter
     @filter = NoteStore::NoteFilter.new
     @filter.order = Type::NoteSortOrder::UPDATED
@@ -50,9 +58,9 @@ helpers do
     return @spec
   end
 
-  def note_url(note, user)
+  def note_url(note, shard_id)
     host = SANDBOX ? 'sandbox' : 'www'
-    "https://#{host}.evernote.com/shard/#{user.shardId}/view/notebook/#{note.guid}"
+    "https://#{host}.evernote.com/shard/#{shard_id}/view/notebook/#{note.guid}"
   end
 
   def latest_notes(max)
@@ -166,8 +174,7 @@ helpers do
       note.resources << resource
       note.content.gsub!(/(?=<\/en-note>)/, image_content(resource, link))
       @note_store.updateNote(note)
-      user = @user_store.getUser
-      [200, {"note_url" => note_url(note, user)}]
+      [200, {"note_url" => note_url(note, shard_id)}]
     rescue Error::EDAMNotFoundException
       logger.error "EDAMNotFoundException: Invalid notebook GUID #{guid}"
       [404, {"error" => "Note not found: #{guid}"}]
@@ -183,8 +190,7 @@ helpers do
   
     begin
       note = @note_store.createNote(new_note)
-      user = @user_store.getUser
-      [200, {"note_url" => note_url(note, user)}]
+      [200, {"note_url" => note_url(note, shard_id)}]
     rescue Error::EDAMUserException => edue
       ## http://dev.evernote.com/documentation/reference/Errors.html#Enum_EDAMErrorCode
       [500, {"error" => "EDAMUserException: #{edue.errorCode}"}]
@@ -202,9 +208,10 @@ helpers do
 end
 
 before '/api/*' do
-  if auth_token.nil?
-    logger.info "auth_token is nil"
-    halt 401,  "auth token is invalid"
+  if auth_token.nil? or user_name.nil?
+    msg = "auth_token or user_name is invalid"
+    logger.info msg
+    halt 401, msg
   else
     profile "Start"
     @client = EvernoteOAuth::Client.new(
@@ -213,8 +220,6 @@ before '/api/*' do
     )
     profile "New Client"
     begin
-      @user_store = @client.user_store
-      profile "User Store"
       @note_store = @client.note_store
       profile "Note Store"
     rescue Error::EDAMUserException => e
@@ -313,10 +318,23 @@ get '/oauth/callback' do
     access_token = request_token.get_access_token(
       :oauth_verifier => params[:oauth_verifier]
     )
+
+    client = EvernoteOAuth::Client.new(
+      token: access_token.token,
+      sandbox: SANDBOX
+    )
+    user_store = client.user_store
+
     session.clear
+
+    user = user_store.getUser
+    session[:user_name] = user.to_s
+    session[:shard_id] = user.shardId
     session[:auth_token] = access_token.token
+
     redirect (params[:back_url] || '/')
   rescue => e
+    session.clear
     @last_error = 'Error extracting access token'
     erb :error
   end
