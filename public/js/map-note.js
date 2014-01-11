@@ -183,6 +183,8 @@ function popupSaveDialog() {
     if(xhr.status == 401) {
       window.location.href = "oauth/request_token?back_url=" + 
         encodeURIComponent(getBackURL());
+    } else {
+      updateUI("error");
     }
   });
 }
