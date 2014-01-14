@@ -145,7 +145,8 @@ function updateMap(center) {
 
 function search() {
   var address = addInput.value;
-  if(address.trim() !== "") {
+  address = address.replace(/^\s+|\s+$/g, '');
+  if(address !== "") {
     geocoder.geocode( { "address": address }, function(data, status) {
       if(status == google.maps.GeocoderStatus.OK) {
         var loc = data[0].geometry.location;
