@@ -7,7 +7,7 @@ var init = {
     return match != null ? parseInt(match[1]) : 14
   },
   center: function() {
-    var match = location.href.match(/center=([\d.]+),([\d.]+)/);
+    var match = location.href.match(/center=([\d-.]+),([\d-.]+)/);
     if(match != null) {
       return new google.maps.LatLng(
         parseFloat(match[1]), parseFloat(match[2]));
