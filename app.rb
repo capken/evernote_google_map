@@ -7,17 +7,8 @@ require "evernote_config.rb"
 include Evernote::EDAM
 
 use Rack::Session::Cookie, :key => 'rack.session',
-                           #:domain => 'localhost',
                            :expire_after => 2592000, # one month
                            :secret => 'change_me'
-
-enable :logging
-
-configure do
-  file = File.new("#{settings.root}/log/#{settings.environment}.log", 'a+')
-  file.sync = true
-  use Rack::CommonLogger, file
-end
 
 CACHE_DIR = "/tmp/evernote_map"
 Dir.mkdir(CACHE_DIR, 0700) unless File.directory? CACHE_DIR
@@ -229,12 +220,12 @@ before '/api/*' do
   end
 end
 
-get '/' do
-  index_page = '/index.html'
-  index_page += "?" + params.map { |k,v|
-    "#{k}=#{v}" }.join("&") unless params.empty?
-  redirect index_page
-end
+#get '/' do
+#  index_page = '/index.html'
+#  index_page += "?" + params.map { |k,v|
+#    "#{k}=#{v}" }.join("&") unless params.empty?
+#  redirect index_page
+#end
 
 get '/api/notes' do
   notes = []

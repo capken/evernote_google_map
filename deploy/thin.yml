@@ -5,9 +5,9 @@
  user: allen
  group: sudo
  port: 4567
- pid: /home/allen/codes/evernote_google_map/thin.pid
+ pid: /home/allen/codes/evernote_google_map/deploy/thin.pid
  rackup: /home/allen/codes/evernote_google_map/config.ru
- log: /home/allen/codes/evernote_google_map/thin.log
+ log: /home/allen/codes/evernote_google_map/log/thin.log
  max_conns: 1024
  timeout: 30
  max_persistent_conns: 512
