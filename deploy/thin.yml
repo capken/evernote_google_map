@@ -2,13 +2,10 @@
  environment: production
  chdir: /home/allen/codes/evernote_google_map
  address: 127.0.0.1
- user: allen
- group: sudo
  port: 4567
- pid: /home/allen/codes/evernote_google_map/deploy/thin.pid
- rackup: /home/allen/codes/evernote_google_map/config.ru
- log: /home/allen/codes/evernote_google_map/log/thin.log
- max_conns: 1024
+ rackup: config.ru
+ log: log/thin.log
+ max_conns: 512
  timeout: 30
- max_persistent_conns: 512
+ max_persistent_conns: 256
  daemonize: true
