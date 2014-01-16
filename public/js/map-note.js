@@ -1,7 +1,7 @@
 
 var init = {
-  lat: 39.908715,
-  lng: 116.3973889,
+  lat: 37.78256139412046,
+  lng: -122.41941550000001,
   zoom: function() {
     var match = location.href.match(/zoom=(\d+)/);
     return match != null ? parseInt(match[1]) : 14
