@@ -25,6 +25,9 @@ var uiState = {
   "loading" : {
     "load-icon" : true
   },
+  "oauth" : {
+    "oauth-message" : true
+  },
   "selection" : {
     "notes" : true,
     "save-button" : true
@@ -116,7 +119,7 @@ function clippedBounds() {
 
 function updateUI(state) {
   var allElements = ["notes", "save-button", "load-icon",
-    "success-message", "error-message"];
+    "success-message", "error-message", "oauth-message"];
   var meta = uiState[state];
   for(var i = 0; i < allElements.length; i++) {
     var id = allElements[i];
@@ -182,8 +185,12 @@ function popupSaveDialog() {
   })
   .fail(function(xhr) {
     if(xhr.status == 401) {
-      window.location.href = "oauth/request_token?back_url=" + 
+      updateUI("oauth");
+      var oauth_url = "oauth/request_token?back_url=" + 
         encodeURIComponent(getBackURL());
+      $("#auth-button").click(function() {
+        window.location.href = oauth_url;
+      });
     } else {
       updateUI("error");
     }

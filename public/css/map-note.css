@@ -23,6 +23,15 @@ html, body, .pure-u-1, .content, #map-canvas {
   text-align: right;
 }
 
+.footer {
+  text-align: center;
+  position: fixed;
+  bottom: 4px;
+  font-size: 11px;
+  width: 320px;
+  color: rgb(190, 194, 194);
+}
+
 .share-links {
   font-size: 19px;
   margin-top: 8px;
@@ -75,4 +84,8 @@ html, body, .pure-u-1, .content, #map-canvas {
 
 .modal-wide {
   width: 450px;
+}
+
+#auth-button {
+  margin-top: 10px;
 }

@@ -51,6 +51,9 @@
             </a>
           </div>
         </div>
+        <div class="footer">
+          Copyright © 2014 MapClipper. <a href="mailto:mapclipper@gmail.com">Contact</a>
+        </div>
       </div>
       <div class="pure-u-1">
         <div class="content">
@@ -81,6 +84,14 @@
             <div id="load-icon" class="text-center">
               <img src="images/ajax-loader.gif">
             </div>
+            <div id="oauth-message" class="text-center">
+              <h4>
+                Allow us access to your Evernote account, so we could clip the map image into your notebooks.
+              </h4>
+              <button id="auth-button" type="button" class="btn btn-info">
+                Connect Evernote
+              </button>
+            </div>
             <div id="success-message" class="text-center">
               <h4>
                 Clipped this map into your <a id="note-link" href="#" target="_blank">note</a> successfully
@@ -88,7 +99,7 @@
             </div>
             <div id="error-message" class="text-center">
               <h4>
-                An error occurred, please try again later
+                An error occurred, please try again later.
               </h4>
             </div>
             <div id="notes">
