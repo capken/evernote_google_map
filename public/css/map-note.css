@@ -43,6 +43,7 @@ html, body, .pure-u-1, .content, #map-canvas {
 
 .brand-title,
 .brand-tagline {
+  font-family: 'Cabin', sans-serif;
   margin: 0;
 }
 
