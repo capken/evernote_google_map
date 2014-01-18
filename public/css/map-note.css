@@ -80,6 +80,11 @@ html, body, .pure-u-1, .content, #map-canvas {
   margin-bottom: 0px;
 }
 
+.list-group-item:first-child, 
+.list-group-item:last-child {
+  border-radius: 0px;
+}
+
 #load-icon, #success-message, #error-message {
   margin-top: 30px;
   margin-bottom: 30px;
