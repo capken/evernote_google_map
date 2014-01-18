@@ -14,7 +14,7 @@ html, body, .pure-u-1, .content, #map-canvas {
   bottom: 0;
   width: 320px;
   margin-left: -320px;
-  background-color: rgb(24, 33, 61);
+  background-color: #1E1D19;
   color: #fff;
 }
 
@@ -43,16 +43,18 @@ html, body, .pure-u-1, .content, #map-canvas {
 
 .brand-title,
 .brand-tagline {
-  font-family: 'Cabin', sans-serif;
+  font-family: 'Ubuntu', sans-serif;
   margin: 0;
 }
 
 .brand-title {
+  font-size: 32px;
+  font-weight: 200;
 }
 
 .brand-tagline {
-  margin-top: 5px;
-  font-weight: 300;
+  font-size: 20px;
+  font-weight: 200;
   color: rgb(142, 142, 214);
 }
 
