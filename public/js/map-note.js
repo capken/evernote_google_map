@@ -241,8 +241,7 @@ function save() {
       data: data
     })
     .done(function(data) {
-      updateUI("success");
-      $("#note-link").attr("href", data.note_url);
+      showNoteLink(data);
     })
     .fail(function(xhr) {
       updateUI("error");
@@ -255,13 +254,20 @@ function save() {
       data: data
     })
     .done(function(data){
-      updateUI("success");
-      $("#note-link").attr("href", data.note_url);
+      showNoteLink(data);
     })
     .fail(function(xhr){
       updateUI("error");
     });
   }
+}
+
+function showNoteLink(data) {
+  updateUI("success");
+  $("#note-link").attr("href", data.note_url);
+  $("#note-link").click(function() {
+    $("#myModal").modal("hide");
+  });
 }
 
 function moveMarker() {
