@@ -188,6 +188,36 @@ helpers do
     end
   end
 
+  def evernote_request(&task)
+    begin
+      task.call
+    rescue Error::EDAMNotFoundException => nfe
+      logger.error "NotFoundEeception:[#{nfe.identifier};#{nfe.key}]"
+      [404, {"error" => "Note not found: #{nfe.key}"}]
+    rescue Error::EDAMUserException => ue
+      case ue.errorCode
+      when Error::EDAMErrorCode::QUOTA_REACHED
+        logger.error "User Quota Reached"
+        [400, {"error" => "User Quota Reached"}]
+      when Error::EDAMErrorCode::LIMIT_REACHED
+        logger.error "Note Limit Reached"
+        [400, {"error" => "Note Limit Reached"}]
+      else
+        logger.error "Other Error:#{ue.errorCode}"
+        [400, {"error" => "Other Error", "code" => ue.errorCode}]
+      end
+    rescue Error::EDAMSystemException => se
+      case se.errorCode
+      when Error::EDAMErrorCode::RATE_LIMIT_REACHED
+        logger.error "Rate Limit Reached"
+        [400, {"error" => "Rate Limit Reached", "rateLimitDuration" => se.rateLimitDuration}]
+      else
+        logger.error "Other Error:#{ue.errorCode}"
+        [400, {"error" => "Other Error"}]
+      end
+    end
+  end
+
   def map_link(lat, lng, zoom)
     "https://maps.google.com/maps?q=loc:#{lat},#{lng}&amp;z=#{zoom}"
   end
