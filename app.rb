@@ -158,39 +158,52 @@ helpers do
     <en-note>#{body}</en-note>
     }
   end
+
+  def parse_request(params, type)
+    lat, lng, zoom = params["lat"], params["lng"], params["zoom"]
+    marker = get_marker params
   
-  def update_note(guid, resource, link)
-    begin
-      note = @note_store.getNote(guid, true, true, true, true)
-      note.resources << resource
-      note.content.gsub!(/(?=<\/en-note>)/, image_content(resource, link))
-      @note_store.updateNote(note)
-      [200, {"note_url" => note_url(note, shard_id)}]
-    rescue Error::EDAMNotFoundException
-      logger.error "EDAMNotFoundException: Invalid notebook GUID #{guid}"
-      [404, {"error" => "Note not found: #{guid}"}]
+    logger.info "location='#{lat},#{lng},#{zoom}'"
+  
+    opts = {
+      :resource => image_resource_of(lat, lng, zoom, marker),
+      :link => map_link(marker.lat, marker.lng, zoom)
+    }
+  
+    case type
+    when :create
+      opts[:note_name] = params['note_name']
+      create_note opts
+    when :update
+      opts[:guid] = params['id']
+      update_note opts
     end
   end
   
-  def create_note(note_name, resource, link)
-    new_note = Type::Note.new
-    new_note.title = note_name
-    new_note.resources = [ resource ]
-    new_note.content = new_note_content(image_content(resource, link))
-    logger.debug new_note.content
+  def update_note(opts)
+    evernote_request do
+      note = @note_store.getNote(opts[:guid], true, true, true, true)
+      note.resources << opts[:resource]
+      note.content.gsub!(/(?=<\/en-note>)/, image_content(opts[:resource], opts[:link]))
+      @note_store.updateNote(note)
+    end
+  end
   
-    begin
-      note = @note_store.createNote(new_note)
-      [200, {"note_url" => note_url(note, shard_id)}]
-    rescue Error::EDAMUserException => edue
-      ## http://dev.evernote.com/documentation/reference/Errors.html#Enum_EDAMErrorCode
-      [500, {"error" => "EDAMUserException: #{edue.errorCode}"}]
+  def create_note(opts)
+    evernote_request do
+      new_note = Type::Note.new
+      new_note.title = opts[:note_name]
+      new_note.resources = [ opts[:resource] ]
+      new_note.content = new_note_content(image_content(opts[:resource], opts[:link]))
+
+      @note_store.createNote(new_note)
     end
   end
 
   def evernote_request(&task)
     begin
-      task.call
+      note = task.call
+      [200, {"note_url" => note_url(note, shard_id)}]
     rescue Error::EDAMNotFoundException => nfe
       logger.error "NotFoundEeception:[#{nfe.identifier};#{nfe.key}]"
       [404, {"error" => "Note not found: #{nfe.key}"}]
@@ -269,35 +282,18 @@ end
 
 # create a new note
 post '/api/notes' do
-  lat, lng, zoom = params["lat"], params["lng"], params["zoom"]
-  marker = get_marker params
-  note_name = params['note_name']
-
-  logger.info "location='#{lat},#{lng},#{zoom}'"
-  resource = image_resource_of(lat, lng, zoom, marker)
-  link = map_link(marker.lat, marker.lng, zoom)
-
-  code, message = create_note(note_name, resource, link)
-
+  code, message = parse_request(params, :create)
   status code
   json message
 end
 
 # update a note
 put '/api/notes/:id' do
-  lat, lng, zoom = params["lat"], params["lng"], params["zoom"]
-  marker = get_marker params
-  guid = params['id']
-
-  logger.info "location='#{lat},#{lng},#{zoom}'"
-  resource = image_resource_of(lat, lng, zoom, marker)
-  link = map_link(marker.lat, marker.lng, zoom)
-
-  code, message = update_note(guid, resource, link)
-
+  code, message = parse_request(params, :update)
   status code
   json message
 end
+
 
 # oauth related routers
 
