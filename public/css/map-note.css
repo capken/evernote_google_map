@@ -97,3 +97,8 @@ html, body, .pure-u-1, .content, #map-canvas {
 #auth-button {
   margin-top: 10px;
 }
+
+#unlink-button {
+  left: 20px;
+  position: absolute;
+}

@@ -30,7 +30,8 @@ var uiState = {
   },
   "selection" : {
     "notes" : true,
-    "save-button" : true
+    "save-button" : true,
+    "unlink-button" : true
   },
   "success" : {
     "success-message" : true
@@ -118,7 +119,7 @@ function clippedBounds() {
 }
 
 function updateUI(state) {
-  var allElements = ["notes", "save-button", "load-icon",
+  var allElements = ["notes", "unlink-button", "save-button", "load-icon",
     "success-message", "error-message", "oauth-message"];
   var meta = uiState[state];
   for(var i = 0; i < allElements.length; i++) {
