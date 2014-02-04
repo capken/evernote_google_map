@@ -270,6 +270,11 @@ end
 #  redirect index_page
 #end
 
+# get '/error' do
+#   @last_error = "Request token not set."
+#   erb :error
+# end
+
 get '/api/notes' do
   notes = []
   latest_notes(5).each do |note|
@@ -345,7 +350,7 @@ get '/oauth/callback' do
     session.clear
 
     user = user_store.getUser
-    session[:user_name] = user.to_s
+    session[:user_name] = user.username
     session[:shard_id] = user.shardId
     session[:auth_token] = access_token.token
 
