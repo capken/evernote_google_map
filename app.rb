@@ -280,7 +280,6 @@ get '/api/notes' do
   latest_notes(5).each do |note|
     notes << { "guid" => note.guid, "title" => note.title }
   end
-  profile "List 5 Notes"
 
   json :notes => notes 
 end
