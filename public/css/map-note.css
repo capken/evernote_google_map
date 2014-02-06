@@ -52,6 +52,15 @@ html, body, .pure-u-1, .content, #map-canvas {
   font-weight: 200;
 }
 
+.brand-title a {
+  text-decoration: none;
+  color: white;
+}
+
+.brand-title a:hover {
+  color: #999;
+}
+
 .brand-tagline {
   font-size: 20px;
   font-weight: 200;
