@@ -102,3 +102,12 @@ html, body, .pure-u-1, .content, #map-canvas {
   left: 20px;
   position: absolute;
 }
+
+#policy {
+  color: #777;
+  padding: 0px 50px;
+  line-height: 1.6;
+  max-width: 768px;
+  margin-left: auto;
+  margin-right: auto;
+}
