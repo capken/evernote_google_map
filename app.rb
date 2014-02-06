@@ -247,18 +247,18 @@ before '/api/*' do
     logger.info msg
     halt 401, msg
   else
-    profile "Start"
     @client = EvernoteOAuth::Client.new(
       token: auth_token,
       sandbox: SANDBOX
     )
-    profile "New Client"
     begin
       @note_store = @client.note_store
-      profile "Note Store"
     rescue Error::EDAMUserException => e
+      logger.error "auth token is expired"
+      halt(401, "auth token is expired") if e.errorCode == Error::EDAMErrorCode::AUTH_EXPIRED
+    rescue Error::EDAMSystemException => e
       logger.error "auth token is invalid"
-      halt(401, "auth token is invalid") if e.errorCode == Error::EDAMErrorCode::AUTH_EXPIRED
+      halt(401, "auth token is invalid") if e.errorCode == Error::EDAMErrorCode::INVALID_AUTH
     end
   end
 end
