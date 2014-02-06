@@ -7,7 +7,7 @@ require "evernote_config.rb"
 include Evernote::EDAM
 
 use Rack::Session::Cookie, :key => 'rack.session',
-                           :expire_after => 2592000, # one month
+                           :expire_after => 15552000, # half of a year
                            :secret => 'change_me'
 
 CACHE_DIR = "/tmp/evernote_map"
