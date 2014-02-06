@@ -216,51 +216,44 @@ function resetSelectedNote() {
 }
 
 function save() {
+  var isNewNote = (selectedNote === null);
+  
+  var noteName = null; 
+  if(isNewNote) {
+    var newNoteName = $("#new-note-name").val();
+    if($.trim(newNoteName) === "") {
+      noteName = "New Note";
+    }
+  }
+
   var center = map.getCenter();
   var data = {
     zoom: map.getZoom(),
     lat: center.lat(),
-    lng: center.lng()
+    lng: center.lng(),
+    note_name: noteName
   }
 
   var mp = marker.getPosition();
   if(typeof mp !== "undefined") {
-    data["mlat"] = mp.lat();
-    data["mlng"] = mp.lng();
+    data.mlat = mp.lat();
+    data.mlng = mp.lng();
   }
 
   updateUI("loading");
 
-  if(selectedNote == null) {
-    var noteName = $("#new-note-name").val();
-    data.note_name = noteName;
-
-    $.ajax({
-      type: "POST",
-      dataType: "json",
-      url: "/api/notes",
-      data: data
-    })
-    .done(function(data) {
-      showNoteLink(data);
-    })
-    .fail(function(xhr) {
-      updateUI("error");
-    });
-  } else {
-    $.ajax({
-      type: "PUT",
-      dataType: "json",
-      url: "/api/notes/" + selectedNote.id,
-      data: data
-    })
-    .done(function(data){
-      showNoteLink(data);
-    })
-    .fail(function(xhr){
-      updateUI("error");
-    });
-  }
+  $.ajax({
+    type: isNewNote ? "POST" : "PUT",
+    dataType: "json",
+    url: "/api/notes" + (isNewNote ? "" : "/" + selectedNote.id),
+    data: data
+  })
+  .done(function(data){
+    showNoteLink(data);
+  })
+  .fail(function(xhr){
+    updateUI("error");
+  });
 }
 
 function showNoteLink(data) {
