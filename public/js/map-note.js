@@ -221,9 +221,7 @@ function save() {
   var noteName = null; 
   if(isNewNote) {
     var newNoteName = $("#new-note-name").val();
-    if($.trim(newNoteName) === "") {
-      noteName = "New Note";
-    }
+    noteName = ($.trim(newNoteName) === "") ? "New Note" : newNoteName;
   }
 
   var center = map.getCenter();
