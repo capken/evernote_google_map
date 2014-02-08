@@ -331,8 +331,8 @@ end
 
 get '/oauth/callback' do
   unless params[:oauth_verifier] || request_token
-    @last_error = "Content owner did not authorize the temporary credentials"
-    halt erb :error
+    logger.error "Content owner did not authorize the temporary credentials"
+    redirect '/oauth/reset'
   end
 
   begin
@@ -355,9 +355,8 @@ get '/oauth/callback' do
 
     redirect (params[:back_url] || '/')
   rescue => e
-    session.clear
-    @last_error = 'Error extracting access token'
-    erb :error
+    logger.error 'Error extracting access token'
+    redirect '/oauth/reset'
   end
 end
 
