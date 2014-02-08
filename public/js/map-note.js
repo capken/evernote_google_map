@@ -4,7 +4,7 @@ var init = {
   lng: -122.41941550000001,
   zoom: function() {
     var match = location.href.match(/zoom=(\d+)/);
-    return match != null ? parseInt(match[1]) : 14
+    return match != null ? parseInt(match[1]) : 13;
   },
   center: function() {
     var match = location.href.match(/center=([\d-.]+),([\d-.]+)/);
@@ -68,11 +68,30 @@ function initialize() {
   });
 }
 
+function navigateToUserLocation() {
+  if(location.href.match(/center=([\d-.]+),([\d-.]+)/)) {
+    return;
+  } else if(navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(
+      function(position) {
+        var userLocation = new google.maps.LatLng(
+          position.coords.latitude, 
+          position.coords.longitude
+        );
+        updateMap(userLocation);
+      }, 
+      function(error) {
+      }
+    );
+  }
+}
+
 function initClippedArea() {
   clippedArea = new google.maps.Rectangle();
 
   google.maps.event.addListenerOnce(map, 'idle', function() {
     clippedArea.setOptions(rectOptions());
+    navigateToUserLocation();
   });
 
   google.maps.event.addListener(map, 'zoom_changed', function() {
