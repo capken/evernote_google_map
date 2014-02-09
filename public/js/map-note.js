@@ -183,7 +183,7 @@ function search() {
 
 function popupSaveDialog() {
   updateUI("loading");
-
+  $("#new-note-name").val("");
   $("#myModal").modal("show");
 
   $.ajax({
