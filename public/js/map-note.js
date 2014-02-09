@@ -124,16 +124,16 @@ function clippedBounds() {
   var center = proj.fromLatLngToPoint(map.getCenter());
 
   var scale = Math.pow(2, map.getZoom());
-  var tl = new google.maps.Point(
+  var sw = new google.maps.Point(
     center.x - 300/scale,
-    center.y - 225/scale);
-  var br = new google.maps.Point(
-    center.x + 300/scale,
     center.y + 225/scale);
+  var ne = new google.maps.Point(
+    center.x + 300/scale,
+    center.y - 225/scale);
 
   return new google.maps.LatLngBounds(
-    proj.fromPointToLatLng(tl),
-    proj.fromPointToLatLng(br)
+    proj.fromPointToLatLng(sw),
+    proj.fromPointToLatLng(ne)
   );
 }
 
@@ -253,8 +253,10 @@ function save() {
 
   var mp = marker.getPosition();
   if(typeof mp !== "undefined") {
-    data.mlat = mp.lat();
-    data.mlng = mp.lng();
+    var validArea = clippedBounds();
+    var position = validArea.contains(mp) ? mp : center;
+    data.mlat = position.lat();
+    data.mlng = position.lng();
   }
 
   updateUI("loading");
