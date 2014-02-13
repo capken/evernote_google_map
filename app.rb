@@ -128,6 +128,22 @@ helpers do
     end
   end
 
+  def attributes_of(lat, lng)
+    attributes = Type::NoteAttributes.new
+    attributes.latitude = lat.to_f
+    attributes.longitude = lng.to_f
+
+    return attributes
+  end
+
+  def update_attributes(note, opts)
+    attributes = note.attributes
+    if attributes.latitude.nil? and attributes.longitude.nil?
+      attributes.latitude = opts[:attributes].latitude
+      attributes.longitude = opts[:attributes].longitude
+    end
+  end
+
   def hash_hex_of(resource)
     hash_func.hexdigest(resource.data.body)
   end
@@ -167,6 +183,7 @@ helpers do
   
     opts = {
       :resource => image_resource_of(lat, lng, zoom, marker),
+      :attributes => attributes_of(lat, lng),
       :link => map_link(marker.lat, marker.lng, zoom)
     }
   
@@ -183,6 +200,7 @@ helpers do
   def update_note(opts)
     evernote_request do
       note = @note_store.getNote(opts[:guid], true, true, true, true)
+      update_attributes(note, opts)
       note.resources << opts[:resource]
       note.content.gsub!(/(?=<\/en-note>)/, image_content(opts[:resource], opts[:link]))
       @note_store.updateNote(note)
@@ -194,6 +212,7 @@ helpers do
       new_note = Type::Note.new
       new_note.title = opts[:note_name]
       new_note.resources = [ opts[:resource] ]
+      new_note.attributes = opts[:attributes]
       new_note.content = new_note_content(image_content(opts[:resource], opts[:link]))
 
       @note_store.createNote(new_note)
