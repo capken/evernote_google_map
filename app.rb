@@ -137,11 +137,10 @@ helpers do
   end
 
   def update_attributes(note, opts)
-    attributes = note.attributes
-    if attributes.latitude.nil? and attributes.longitude.nil?
-      attributes.latitude = opts[:attributes].latitude
-      attributes.longitude = opts[:attributes].longitude
-    end
+    attr = opts[:attributes]
+    note.attributes = note.attributes || Type::NoteAttributes.new
+    note.attributes.latitude = note.attributes.latitude || attr.latitude
+    note.attributes.longitude = note.attributes.longitude || attr.longitude
   end
 
   def hash_hex_of(resource)
@@ -201,6 +200,7 @@ helpers do
     evernote_request do
       note = @note_store.getNote(opts[:guid], true, true, true, true)
       update_attributes(note, opts)
+      note.resources = note.resources || []
       note.resources << opts[:resource]
       note.content.gsub!(/(?=<\/en-note>)/, image_content(opts[:resource], opts[:link]))
       @note_store.updateNote(note)
