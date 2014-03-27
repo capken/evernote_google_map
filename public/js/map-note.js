@@ -181,9 +181,19 @@ function search() {
   }
 }
 
+function suggestedNewNoteName() {
+  var address = addInput.value;
+  address = address.replace(/^\s+|\s+$/g, '');
+  if(address === "") {
+    return "MapClipper: " + new Date().toUTCString();
+  } else {
+    return "MapCLipper: " + address;
+  }
+}
+
 function popupSaveDialog() {
   updateUI("loading");
-  $("#new-note-name").val("");
+  $("#new-note-name").val(suggestedNewNoteName());
   $("#myModal").modal("show");
 
   $.ajax({

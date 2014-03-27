@@ -37,7 +37,7 @@ helpers do
 
   def filter
     @filter = NoteStore::NoteFilter.new
-    @filter.order = Type::NoteSortOrder::UPDATED
+    @filter.order = Type::NoteSortOrder::UPDATE_SEQUENCE_NUMBER
 
     return @filter
   end
