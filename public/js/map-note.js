@@ -187,7 +187,7 @@ function suggestedNewNoteName() {
   if(address === "") {
     return "MapClipper: " + new Date().toUTCString();
   } else {
-    return "MapCLipper: " + address;
+    return "MapClipper: " + address;
   }
 }
 
