@@ -72,13 +72,13 @@ helpers do
     "#{CACHE_DIR}/#{map_image_name(lat, lng)}"
   end
 
-  def dump_static_map(lat, lng, zoom, marker)
+  def dump_static_map(lat, lng, zoom, map_type, marker)
     params = {
       :center => "#{lat},#{lng}",
       :zoom => zoom,
       :scale => 1,
       :size => "600x450",
-      :maptype => "roadmap",
+      :maptype => map_type || "roadmap",
       :sensor => false
     }
 
@@ -107,8 +107,8 @@ helpers do
     @hash ||= Digest::MD5.new
   end
   
-  def image_resource_of(lat, lng, room, marker)
-    if dump_static_map(lat, lng, room, marker)
+  def image_resource_of(lat, lng, room, map_type, marker)
+    if dump_static_map(lat, lng, room, map_type, marker)
       image_data = File.open(
         map_image_path(lat, lng), "rb"
       ) { |io| io.read }
@@ -175,13 +175,14 @@ helpers do
   end
 
   def parse_request(params, type)
-    lat, lng, zoom = params["lat"], params["lng"], params["zoom"]
+    lat, lng, zoom = params["lat"], params["lng"]
+    zoom, map_type = params["zoom"], params["map_type"]
     marker = get_marker params
   
     logger.info "location='#{lat},#{lng},#{zoom}'"
   
     opts = {
-      :resource => image_resource_of(lat, lng, zoom, marker),
+      :resource => image_resource_of(lat, lng, zoom, map_type, marker),
       :attributes => attributes_of(lat, lng),
       :link => map_link(marker.lat, marker.lng, zoom)
     }

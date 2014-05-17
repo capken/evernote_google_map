@@ -256,6 +256,7 @@ function save() {
   var center = map.getCenter();
   var data = {
     zoom: map.getZoom(),
+    map_type: map.getMapTypeId(),
     lat: center.lat(),
     lng: center.lng(),
     note_name: noteName
