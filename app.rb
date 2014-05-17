@@ -251,7 +251,23 @@ helpers do
   end
 
   def map_link(lat, lng, zoom)
-    "https://maps.google.com/maps?q=loc:#{lat},#{lng}&amp;z=#{zoom}"
+    #"https://maps.google.com/maps?q=loc:#{lat},#{lng}&amp;z=#{zoom}"
+    lat_dd = dd_of lat.to_f, :lat
+    lng_dd = dd_of lng.to_f, :lng
+    "https://www.google.com/maps/place/#{lat_dd}+#{lng_dd}/@#{lat},#{lng},#{zoom}z/"
+  end
+
+  def dd_of(dms, lat_or_lng)
+    d = dms.abs.floor
+    m = (dms.abs * 60).floor % 60
+    s = dms.abs * 3600 % 60
+    postfix = case lat_or_lng
+    when :lat
+     dms > 0 ? "N" : "S"
+    when :lng
+     dms > 0 ? "E" : "W"
+    end
+    URI.escape("%.f°%.f'%.1f\"%s" % [d, m, s, postfix])
   end
 
   def profile(msg)
