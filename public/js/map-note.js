@@ -185,7 +185,7 @@ function suggestedNewNoteName() {
   var address = addInput.value;
   address = address.replace(/^\s+|\s+$/g, '');
   if(address === "") {
-    return "MapClipper: " + new Date().toUTCString();
+    return "MapClipper: " + new Date().toString().replace(/\sGMT.+$/, "");
   } else {
     return "MapClipper: " + address;
   }
