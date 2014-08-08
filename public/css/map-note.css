@@ -2,6 +2,14 @@ html, body, .pure-u-1, .content, #map-canvas {
   height: 100%;
 }
 
+#alert {
+  position: fixed;
+  bottom: 8px;
+  right: 8px;
+  width: 500px;
+  height: 48px
+}
+
 #layout {
   padding-left: 320px;
   position: relative;
