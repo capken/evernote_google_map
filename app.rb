@@ -51,6 +51,7 @@ helpers do
 
   def note_url(note, shard_id)
     host = SANDBOX ? 'sandbox' : 'www'
+    # https://www.evernote.com/view/notebook/30396291-fa9e-4e06-b64b-2bab0724dc99
     "https://#{host}.evernote.com/shard/#{shard_id}/view/notebook/#{note.guid}"
   end
 
