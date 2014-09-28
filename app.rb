@@ -1,5 +1,8 @@
 require 'sinatra'
 require 'sinatra/json'
+require 'retryable'
+require 'open-uri'
+require 'uri'
 
 $LOAD_PATH.push(File.expand_path(File.dirname(__FILE__)))
 require "evernote_config.rb"
@@ -87,10 +90,18 @@ helpers do
       "color:red|label:|#{marker.lat},#{marker.lng}" if marker
     
     params = params.map { |k,v| "#{k}=#{v}" }.join("&")
+    url = [map_provider_endpoint, "?", URI.encode(params)].join
 
-    url = [map_provider_endpoint, "?", params].join
+    image_data = nil
+    retryable(:tries => 5, :on => OpenURI::HTTPError) do
+      image_data = open(url).read
+    end
 
-    system("curl \"#{url}\" -o #{map_image_path(lat, lng)}")
+    return image_data
+#
+#    scipt = "curl \"#{url}\" -o #{map_image_path(lat, lng)}"
+#    logger.info script
+#    system(script)
   end
 
   def get_marker(params)
@@ -109,24 +120,20 @@ helpers do
   end
   
   def image_resource_of(lat, lng, room, map_type, marker)
-    if dump_static_map(lat, lng, room, map_type, marker)
-      image_data = File.open(
-        map_image_path(lat, lng), "rb"
-      ) { |io| io.read }
+    image_data = dump_static_map(lat, lng, room, map_type, marker)
   
-      data = Type::Data.new
-      data.size = image_data.size
-      data.body = image_data
-      data.bodyHash = hash_func.digest(image_data)
+    data = Type::Data.new
+    data.size = image_data.size
+    data.body = image_data
+    data.bodyHash = hash_func.digest(image_data)
   
-      resource = Type::Resource.new
-      resource.mime = "image/png"
-      resource.data = data
-      resource.attributes = Type::ResourceAttributes.new
-      resource.attributes.fileName = map_image_name(lat, lng)
+    resource = Type::Resource.new
+    resource.mime = "image/png"
+    resource.data = data
+    resource.attributes = Type::ResourceAttributes.new
+    resource.attributes.fileName = map_image_name(lat, lng)
   
-      return resource
-    end
+    return resource
   end
 
   def attributes_of(lat, lng)
