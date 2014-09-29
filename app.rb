@@ -98,10 +98,6 @@ helpers do
     end
 
     return image_data
-#
-#    scipt = "curl \"#{url}\" -o #{map_image_path(lat, lng)}"
-#    logger.info script
-#    system(script)
   end
 
   def get_marker(params)
