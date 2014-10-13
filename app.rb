@@ -1,5 +1,6 @@
 require 'sinatra'
 require 'sinatra/json'
+require 'curb'
 
 $LOAD_PATH.push(File.expand_path(File.dirname(__FILE__)))
 require "evernote_config.rb"
@@ -12,6 +13,8 @@ use Rack::Session::Cookie, :key => 'rack.session',
 
 CACHE_DIR = "/tmp/evernote_map"
 Dir.mkdir(CACHE_DIR, 0700) unless File.directory? CACHE_DIR
+
+class RetryException < StandardError; end
 
 helpers do
 
@@ -90,7 +93,26 @@ helpers do
 
     url = [map_provider_endpoint, "?", params].join
 
-    system("curl \"#{url}\" -o #{map_image_path(lat, lng)}")
+    return curl_map_data(url)
+  end
+
+  def curl_map_data(url)
+    @curl = @curl || Curl::Easy.new
+    @curl.url = url
+
+    retries = 0
+    begin
+      @curl.perform
+      if @curl.response_code == 200
+        return @curl.body_str
+      else
+        raise RetryException 
+      end
+    rescue RetryException => e
+      retries += 1
+      retry if retries < 3
+      raise "Failed to download Google Static Map: " + url
+    end
   end
 
   def get_marker(params)
@@ -109,24 +131,20 @@ helpers do
   end
   
   def image_resource_of(lat, lng, room, map_type, marker)
-    if dump_static_map(lat, lng, room, map_type, marker)
-      image_data = File.open(
-        map_image_path(lat, lng), "rb"
-      ) { |io| io.read }
+    image_data = dump_static_map(lat, lng, room, map_type, marker)
+
+    data = Type::Data.new
+    data.size = image_data.size
+    data.body = image_data
+    data.bodyHash = hash_func.digest(image_data)
   
-      data = Type::Data.new
-      data.size = image_data.size
-      data.body = image_data
-      data.bodyHash = hash_func.digest(image_data)
+    resource = Type::Resource.new
+    resource.mime = "image/png"
+    resource.data = data
+    resource.attributes = Type::ResourceAttributes.new
+    resource.attributes.fileName = map_image_name(lat, lng)
   
-      resource = Type::Resource.new
-      resource.mime = "image/png"
-      resource.data = data
-      resource.attributes = Type::ResourceAttributes.new
-      resource.attributes.fileName = map_image_name(lat, lng)
-  
-      return resource
-    end
+    return resource
   end
 
   def attributes_of(lat, lng)
@@ -176,7 +194,7 @@ helpers do
   end
 
   def parse_request(params, type)
-    lat, lng, zoom = params["lat"], params["lng"]
+    lat, lng = params["lat"], params["lng"]
     zoom, map_type = params["zoom"], params["map_type"]
     marker = get_marker params
   

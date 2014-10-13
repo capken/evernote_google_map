@@ -2,6 +2,7 @@ GEM
   remote: https://rubygems.org/
   specs:
     backports (3.6.3)
+    curb (0.8.5)
     evernote-thrift (1.25.1)
     evernote_oauth (0.2.3)
       evernote-thrift
@@ -30,6 +31,7 @@ PLATFORMS
   ruby
 
 DEPENDENCIES
+  curb
   evernote_oauth
   sinatra
   sinatra-contrib
