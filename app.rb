@@ -1,6 +1,7 @@
 require 'sinatra'
 require 'sinatra/json'
 require 'curb'
+require 'uri'
 
 $LOAD_PATH.push(File.expand_path(File.dirname(__FILE__)))
 require "evernote_config.rb"
@@ -30,14 +31,6 @@ helpers do
     session[:auth_token]
   end
 
-  def user_name
-    session[:user_name]
-  end
-
-  def shard_id
-    session[:shard_id]
-  end
-
   def filter
     @filter = NoteStore::NoteFilter.new
     @filter.order = Type::NoteSortOrder::UPDATED
@@ -52,15 +45,15 @@ helpers do
     return @spec
   end
 
-  def note_url(note, shard_id)
+  def note_url(note)
     host = SANDBOX ? 'sandbox' : 'www'
     # https://www.evernote.com/view/notebook/30396291-fa9e-4e06-b64b-2bab0724dc99
-    "https://#{host}.evernote.com/shard/#{shard_id}/view/notebook/#{note.guid}"
+    "https://#{host}.evernote.com/view/notebook/#{note.guid}"
   end
 
   def latest_notes(max)
     @note_store.findNotesMetadata(
-      auth_token, filter, 0, max, spec
+      filter, 0, max, spec
     ).notes
   end
 
@@ -242,7 +235,7 @@ helpers do
   def evernote_request(&task)
     begin
       note = task.call
-      [200, {"note_url" => note_url(note, shard_id)}]
+      [200, {"note_url" => note_url(note)}]
     rescue Error::EDAMNotFoundException => nfe
       logger.error "NotFoundEeception:[#{nfe.identifier};#{nfe.key}]"
       [404, {"error" => "Note not found: #{nfe.key}"}]
@@ -297,13 +290,13 @@ helpers do
 end
 
 before '/api/*' do
-  if auth_token.nil? or user_name.nil?
-    msg = "auth_token or user_name is invalid"
+  if auth_token.nil? and params["auth_token"].nil?
+    msg = "auth_token is invalid"
     logger.info msg
     halt 401, msg
   else
     @client = EvernoteOAuth::Client.new(
-      token: auth_token,
+      token: auth_token || params["auth_token"],
       sandbox: SANDBOX
     )
     begin
@@ -318,12 +311,12 @@ before '/api/*' do
   end
 end
 
-#get '/' do
-#  index_page = '/index.html'
-#  index_page += "?" + params.map { |k,v|
-#    "#{k}=#{v}" }.join("&") unless params.empty?
-#  redirect index_page
-#end
+get '/' do
+  index_page = '/index.html'
+  index_page += "?" + params.map { |k,v|
+    "#{k}=#{v}" }.join("&") unless params.empty?
+  redirect index_page
+end
 
 # get '/error' do
 #   @last_error = "Request token not set."
@@ -395,21 +388,20 @@ get '/oauth/callback' do
       :oauth_verifier => params[:oauth_verifier]
     )
 
-    client = EvernoteOAuth::Client.new(
-      token: access_token.token,
-      sandbox: SANDBOX
-    )
-    user_store = client.user_store
-
     session.clear
 
-    user = user_store.getUser
-    session[:user_name] = user.username
-    session[:shard_id] = user.shardId
     session[:auth_token] = access_token.token
 
-    redirect (params[:back_url] || '/')
+    if params[:back_url]
+      back_url = URI(params[:back_url])
+      params = URI.decode_www_form(back_url.query || '') << ['auth_token', access_token.token]
+      back_url.query = URI.encode_www_form(params)
+      redirect back_url.to_s
+    else
+      redirect '/'
+    end
   rescue => e
+    warn e.message
     logger.error 'Error extracting access token'
     redirect '/oauth/reset'
   end
